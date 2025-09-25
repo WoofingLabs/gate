@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JaceFun</title>
+    <link rel="icon" href="https://woofingjace.com/images/jace.png" type="image/x-icon">
+    <style>
+        body {
+            background: #000000;
+            font-family: 'PingFang SC', Arial, sans-serif;
+            margin: 0;
+            padding: 15px;
+            color: #ffffff;
+            display: flex;
+            justify-content: center;
+        }
+        .container {
+            max-width: 1000px;
+            width: 100%;
+            display: flex;
+            gap: 15px;
+        }
+        .sidebar {
+            width: 280px;
+            background: #1a1a1a;
+            padding: 15px;
+            border-radius: 8px;
+            height: fit-content;
+        }
+        .main {
+            flex: 1;
+            background: #1a1a1a;
+            padding: 15px;
+            border-radius: 8px;
+        }
+        h1 {
+            text-align: center;
+            font-size: 26px;
+            margin: 0 0 15px;
+            color: #4caf50;
+        }
+        h2 {
+            font-size: 18px;
+            margin-bottom: 10px;
+        }
+        .section {
+            margin-bottom: 15px;
+            background: #2d2d2d;
+            padding: 12px;
+            border-radius: 8px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-size: 13px;
+        }
+        input {
+            width: 100%;
+            padding: 8px;
+            margin-bottom: 8px;
+            background: #333333;
+            border: 1px solid #444444;
+            color: #ffffff;
+            border-radius: 6px;
+            font-size: 13px;
+        }
+        button {
+            padding: 12px 18px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            margin: 5px;
+            touch-action: manipulation;
+        }
+        .buy-btn {
+            background: #4caf50;
+        }
+        .buy-btn:hover {
+            background: #45a049;
+        }
+        .sell-btn {
+            background: #f44336;
+        }
+        .sell-btn:hover {
+            background: #d32f2f;
+        }
+        .action-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin: 10px 0;
+        }
+        .percent-buttons {
+            margin: 8px 0;
+            display: flex;
+            gap: 5px;
+        }
+        .percent-buttons button {
+            flex: 1;
+            padding: 8px;
+            font-size: 12px;
+            background: #555555;
+        }
+        .percent-buttons button:hover {
+            background: #666666;
+        }
+        .status {
+            margin-top: 8px;
+            font-size: 12px;
+            color: #bbbbbb;
+        }
+        .balance {
+            margin: 8px 0;
+            font-size: 14px;
+            display: inline-block;
+            margin-left: 10px;
+        }
+        .disabled {
+            opacity: 0.5;
+            pointer-events: none;
+        }
+        .progress-bar {
+            width: 100%;
+            background: #333333;
+            height: 18px;
+            border-radius: 6px;
+            overflow: hidden;
+            margin-top: 8px;
+        }
+        .progress {
+            height: 100%;
+            background: #4caf50;
+            transition: width 0.3s;
+        }
+        .token-info {
+            display: none;
+        }
+        @media (max-width: 768px) {
+            .container {
+                flex-direction: column;
+                gap: 10px;
+            }
+            .sidebar, .main {
+                width: 100%;
+                padding: 10px;
+            }
+            h1 {
+                font-size: 22px;
+            }
+            h2 {
+                font-size: 16px;
+            }
+            button {
+                padding: 10px 14px;
+                font-size: 12px;
+            }
+            input {
+                font-size: 12px;
+            }
+            .action-buttons {
+                flex-direction: column;
+                align-items: center;
+            }
+            .balance {
+                display: block;
+                margin-left: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="sidebar">
+            <h2>GDOG 代币</h2>
+            <div id="tokenInfoStatic">
+                <div class="section">
+                    <input type="text" value="0x1161108e673793295d35fb9931662f6745eab417" readonly>
+                    <button class="copy-btn" onclick="copyToClipboard('0x1161108e673793295d35fb9931662f6745eab417')">复制</button>
+                </div>
+            </div>
+            <div id="searchStatus" class="status"></div>
+        </div>
+        <div class="main">
+            <h1>JaceFun</h1>
+            <div class="section">
+                <button id="connectWallet">连接钱包</button>
+                <div id="walletStatus" class="status">未连接</div>
+            </div>
+            <div class="section">
+                <h2>代币操作</h2>
+                <div id="tokenInfo" class="token-info">
+                    <div id="tokenDetails" class="status"></div>
+                    <div id="progressResult" class="status"></div>
+                    <div class="progress-bar"><div id="progressBar" class="progress" style="width: 0%;"></div></div>
+                    <div class="section">
+                        <h2>买入 GDOG</h2>
+                        <label for="buyAmount">数量 (GT): <span id="gtBalance" class="balance"></span></label>
+                        <input type="number" id="buyAmount" placeholder="0.0" step="0.0001" disabled>
+                        <div class="percent-buttons">
+                            <button onclick="setPercent(25, 'buy')" disabled>25%</button>
+                            <button onclick="setPercent(50, 'buy')" disabled>50%</button>
+                            <button onclick="setPercent(75, 'buy')" disabled>75%</button>
+                            <button onclick="setPercent(100, 'buy')" disabled>最大</button>
+                        </div>
+                        <div class="action-buttons">
+                            <button id="buyButton" class="buy-btn" onclick="buyTokens()" disabled>买入 GDOG</button>
+                        </div>
+                    </div>
+                    <div class="section">
+                        <h2>卖出 GDOG</h2>
+                        <label for="sellAmount">数量 (GDOG): <span id="tokenBalance" class="balance"></span></label>
+                        <input type="number" id="sellAmount" placeholder="0.0" step="0.0001" disabled>
+                        <div class="percent-buttons">
+                            <button onclick="setPercent(25, 'sell')" disabled>25%</button>
+                            <button onclick="setPercent(50, 'sell')" disabled>50%</button>
+                            <button onclick="setPercent(75, 'sell')" disabled>75%</button>
+                            <button onclick="setPercent(100, 'sell')" disabled>最大</button>
+                        </div>
+                        <div class="action-buttons">
+                            <button id="sellButton" class="sell-btn" onclick="sellTokens()" disabled>卖出 GDOG</button>
+                        </div>
+                    </div>
+                    <div id="transactionStatus" class="status"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/web3@1.7.0/dist/web3.min.js"></script>
+    <script>
+        let web3, accounts, tokenFactoryContract, tokenContract;
+        const currentTokenAddress = '0x1161108e673793295d35fb9931662f6745eab417'; // GDOG
+
+        const tokenFactoryAddress = '0x17b1abeb70b53ea4fdb57a775973580666228b0f';
+        const tokenFactoryABI = [
+            {"inputs":[{"internalType":"string","name":"name","type":"string"},{"internalType":"string","name":"symbol","type":"string"}],"name":"createToken","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"nonpayable","type":"function"},
+            {"inputs":[{"internalType":"address","name":"tokenAddress","type":"address"}],"name":"buyTokens","outputs":[],"stateMutability":"payable","type":"function"},
+            {"inputs":[{"internalType":"address","name":"tokenAddress","type":"address"},{"internalType":"uint256","name":"amount","type":"uint256"}],"name":"sellTokens","outputs":[],"stateMutability":"nonpayable","type":"function"},
+            {"inputs":[{"internalType":"address","name":"","type":"address"}],"name":"collateral","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},
+            {"inputs":[{"internalType":"address","name":"","type":"address"}],"name":"tokens","outputs":[{"internalType":"enum TokenFactory.TokenState","name":"","type":"uint8"}],"stateMutability":"view","type":"function"},
+            {"inputs":[],"name":"FUNDING_GOAL","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},
+            {"inputs":[{"internalType":"uint256","name":"","type":"uint256"}],"name":"tokenList","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},
+            {"inputs":[],"name":"tokenCount","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"}
+        ];
+        const tokenABI = [
+            {"constant":true,"inputs":[{"name":"_owner","type":"address"}],"name":"balanceOf","outputs":[{"name":"balance","type":"uint256"}],"type":"function"},
+            {"constant":true,"inputs":[],"name":"totalSupply","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},
+            {"constant":true,"inputs":[],"name":"name","outputs":[{"name":"","type":"string"}],"stateMutability":"view","type":"function"},
+            {"constant":true,"inputs":[],"name":"symbol","outputs":[{"name":"","type":"string"}],"stateMutability":"view","type":"function"}
+        ];
+
+        const gateChain = { chainId: 86, rpcUrl: 'https://evm.nodeinfo.cc' };
+        const FUNDING_SUPPLY = '800000000000000000000000000'; // 800M tokens (18 decimals)
+        const RESERVED_AMOUNT = '1000000000000000'; // 0.001 tokens (18 decimals)
+
+        async function connectWallet() {
+            if (!window.ethereum) {
+                document.getElementById('walletStatus').innerText = '请安装 MetaMask';
+                return;
+            }
+            try {
+                web3 = new Web3(window.ethereum);
+                await window.ethereum.request({ method: 'eth_requestAccounts' });
+                const chainId = Number(await web3.eth.getChainId());
+                if (chainId !== 86) {
+                    try {
+                        await window.ethereum.request({
+                            method: 'wallet_switchEthereumChain',
+                            params: [{ chainId: '0x56' }]
+                        });
+                    } catch (switchError) {
+                        if (switchError.code === 4902) {
+                            await window.ethereum.request({
+                                method: 'wallet_addEthereumChain',
+                                params: [{
+                                    chainId: '0x56',
+                                    chainName: 'GateChain',
+                                    rpcUrls: ['https://evm.nodeinfo.cc'],
+                                    nativeCurrency: {
+                                        name: 'GT',
+                                        symbol: 'GT',
+                                        decimals: 18
+                                    }
+                                }]
+                            });
+                        } else {
+                            throw switchError;
+                        }
+                    }
+                }
+                accounts = await web3.eth.getAccounts();
+                tokenFactoryContract = new web3.eth.Contract(tokenFactoryABI, tokenFactoryAddress);
+                document.getElementById('walletStatus').innerText = `已连接: ${accounts[0].slice(0, 6)}...${accounts[0].slice(-4)}`;
+                enableInputs(true);
+                await fetchTokenInfo();
+                await updateBalances();
+            } catch (error) {
+                document.getElementById('walletStatus').innerText = '连接失败: ' + (error.message || '未知错误');
+                console.error('Connect wallet error:', error);
+            }
+        }
+
+        function enableInputs(enabled) {
+            document.getElementById('buyAmount').disabled = !enabled;
+            document.getElementById('sellAmount').disabled = !enabled;
+        }
+
+        async function updateBalances() {
+            if (!web3 || !accounts) {
+                document.getElementById('gtBalance').innerText = '请连接钱包';
+                document.getElementById('tokenBalance').innerText = '请连接钱包';
+                return;
+            }
+            try {
+                const gtBalance = await web3.eth.getBalance(accounts[0]);
+                document.getElementById('gtBalance').innerText = `余额: ${web3.utils.fromWei(gtBalance, 'ether')} GT`;
+                tokenContract = new web3.eth.Contract(tokenABI, currentTokenAddress);
+                const tokenBalance = await tokenContract.methods.balanceOf(accounts[0]).call();
+                const symbol = await tokenContract.methods.symbol().call();
+                document.getElementById('tokenBalance').innerText = `余额: ${web3.utils.fromWei(tokenBalance, 'ether')} ${symbol}`;
+            } catch (error) {
+                document.getElementById('gtBalance').innerText = '获取 GT 余额失败';
+                document.getElementById('tokenBalance').innerText = '获取代币余额失败';
+            }
+        }
+
+        function copyToClipboard(text) {
+            navigator.clipboard.writeText(text).then(() => {
+                alert('地址已复制到剪贴板！');
+            }).catch(err => {
+                console.error('复制失败: ', err);
+            });
+        }
+
+        async function fetchTokenInfo() {
+            try {
+                tokenContract = new web3.eth.Contract(tokenABI, currentTokenAddress);
+                const name = await tokenContract.methods.name().call();
+                const symbol = await tokenContract.methods.symbol().call();
+                const tokenState = await tokenFactoryContract.methods.tokens(currentTokenAddress).call();
+                const collateral = await tokenFactoryContract.methods.collateral(currentTokenAddress).call();
+                const fundingGoal = await tokenFactoryContract.methods.FUNDING_GOAL().call();
+                const progress = (Number(collateral) / Number(fundingGoal)) * 100;
+
+                document.getElementById('tokenDetails').innerText = `代币: ${name} (${symbol})`;
+                document.getElementById('progressResult').innerText = `众筹进度: ${progress.toFixed(2)}% (状态: ${['未创建', '众筹中', '交易中'][tokenState]})`;
+                document.getElementById('progressBar').style.width = `${Math.min(progress, 100)}%`;
+                document.getElementById('tokenInfo').style.display = 'block';
+                document.getElementById('searchStatus').innerText = '';
+
+                const isFunding = tokenState == 1 && accounts;
+                document.getElementById('buyAmount').disabled = !isFunding;
+                document.getElementById('sellAmount').disabled = !isFunding;
+                document.querySelectorAll('.percent-buttons button').forEach(btn => btn.disabled = !isFunding);
+                document.getElementById('buyButton').disabled = !isFunding;
+                document.getElementById('sellButton').disabled = !isFunding;
+
+                await updateBalances();
+            } catch (error) {
+                document.getElementById('tokenInfo').style.display = 'none';
+                document.getElementById('progressResult').innerText = '';
+                document.getElementById('progressBar').style.width = '0%';
+                document.getElementById('tokenDetails').innerText = '获取代币信息失败: ' + error.message;
+                document.getElementById('tokenBalance').innerText = '获取代币信息失败';
+                document.getElementById('buyAmount').disabled = true;
+                document.getElementById('sellAmount').disabled = true;
+                document.querySelectorAll('.percent-buttons button').forEach(btn => btn.disabled = true);
+                document.getElementById('buyButton').disabled = true;
+                document.getElementById('sellButton').disabled = true;
+                document.getElementById('searchStatus').innerText = '获取代币信息失败: ' + error.message;
+            }
+        }
+
+        async function setPercent(percent, action) {
+            if (!web3 || !accounts) {
+                document.getElementById('transactionStatus').innerText = '请先连接钱包';
+                return;
+            }
+            let amount;
+            if (action === 'buy') {
+                const gtBalance = await web3.eth.getBalance(accounts[0]);
+                const balanceInGT = Number(web3.utils.fromWei(gtBalance, 'ether'));
+                amount = (balanceInGT * percent / 100).toFixed(4);
+                if (percent === 100) amount = (balanceInGT - 0.001).toFixed(4);
+                document.getElementById('buyAmount').value = amount > 0 ? amount : 0;
+            } else {
+                tokenContract = new web3.eth.Contract(tokenABI, currentTokenAddress);
+                const tokenBalance = await tokenContract.methods.balanceOf(accounts[0]).call();
+                const balanceInTokens = Number(web3.utils.fromWei(tokenBalance, 'ether'));
+                amount = (balanceInTokens * percent / 100).toFixed(4);
+                if (percent === 100) amount = (balanceInTokens - 0.001).toFixed(4);
+                document.getElementById('sellAmount').value = amount > 0 ? amount : 0;
+            }
+        }
+
+        async function buyTokens() {
+            if (!web3 || !accounts) {
+                document.getElementById('transactionStatus').innerText = '请连接钱包';
+                return;
+            }
+            const amount = document.getElementById('buyAmount').value;
+            if (!amount || amount <= 0) {
+                document.getElementById('transactionStatus').innerText = '请输入有效数量';
+                return;
+            }
+            try {
+                const tokenState = await tokenFactoryContract.methods.tokens(currentTokenAddress).call();
+                if (tokenState != 1) {
+                    document.getElementById('transactionStatus').innerText = '代币不在众筹状态';
+                    return;
+                }
+                document.getElementById('transactionStatus').innerText = '正在买入 GDOG...';
+                const gas = await tokenFactoryContract.methods.buyTokens(currentTokenAddress).estimateGas({ from: accounts[0], value: web3.utils.toWei(amount, 'ether') });
+                await tokenFactoryContract.methods.buyTokens(currentTokenAddress).send({ from: accounts[0], value: web3.utils.toWei(amount, 'ether'), gas: Math.floor(gas * 1.2) });
+                document.getElementById('transactionStatus').innerText = '买入成功！';
+                await fetchTokenInfo();
+            } catch (error) {
+                document.getElementById('transactionStatus').innerText = '买入失败: ' + error.message;
+            }
+        }
+
+        async function sellTokens() {
+            if (!web3 || !accounts) {
+                document.getElementById('transactionStatus').innerText = '请连接钱包';
+                return;
+            }
+            const amount = document.getElementById('sellAmount').value;
+            if (!amount || amount <= 0) {
+                document.getElementById('transactionStatus').innerText = '请输入有效数量';
+                return;
+            }
+            try {
+                const tokenState = await tokenFactoryContract.methods.tokens(currentTokenAddress).call();
+                if (tokenState != 1) {
+                    document.getElementById('transactionStatus').innerText = '代币不在众筹状态';
+                    return;
+                }
+                document.getElementById('transactionStatus').innerText = '正在卖出 GDOG...';
+                const gas = await tokenFactoryContract.methods.sellTokens(currentTokenAddress, web3.utils.toWei(amount, 'ether')).estimateGas({ from: accounts[0] });
+                await tokenFactoryContract.methods.sellTokens(currentTokenAddress, web3.utils.toWei(amount, 'ether')).send({ from: accounts[0], gas: Math.floor(gas * 1.2) });
+                document.getElementById('transactionStatus').innerText = '卖出成功！';
+                await fetchTokenInfo();
+            } catch (error) {
+                document.getElementById('transactionStatus').innerText = '卖出失败: ' + error.message;
+            }
+        }
+
+        document.getElementById('connectWallet').addEventListener('click', connectWallet);
+    </script>
+</body>
+</html>
