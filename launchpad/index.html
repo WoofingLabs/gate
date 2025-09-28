@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="test: Create, trade, and manage tokens on Gate Layer blockchain. Connect with MetaMask to explore.">
-    <meta name="keywords" content="test, Gate Layer, blockchain, token, Web3, cryptocurrency">
+    <meta name="description" content="test: Create, trade, and manage DGT.gt tokens on Gate Layer blockchain. Connect with MetaMask to explore.">
+    <meta name="keywords" content="test, Gate Layer, DGT, blockchain, token, Web3, cryptocurrency">
     <meta name="robots" content="index, follow">
-    <title>test - Token Trading</title>
+    <title>test - DGT.gt Token Trading</title>
     <base href="/test/">
     <link rel="icon" href="https://swap.woofingjace.com/image/header/logo.png" type="image/png">
     <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@200;400;700&display=swap" rel="stylesheet">
@@ -349,7 +349,7 @@
                 <button id="connectWallet">Connect Wallet</button>
             </div>
             <div class="address-bar">
-                <input type="text" id="domainInput" placeholder="Enter domain (e.g., Jace)">
+                <input type="text" id="domainInput" placeholder="Enter domain (e.g., DGT.gt)">
                 <button id="searchButton">Search</button>
             </div>
         </div>
@@ -369,7 +369,7 @@
                     <div class="progress-bar"><div id="progressBar" class="progress" style="width: 0%;"></div></div>
                     <div class="section">
                         <h2>Buy Tokens</h2>
-                        <label for="buyAmount">Amount (GT): <span id="GTBalance" class="balance"></span></label>
+                        <label for="buyAmount">Amount (GT): <span id="gtBalance" class="balance"></span></label>
                         <input type="number" id="buyAmount" placeholder="0.0" step="0.0001" disabled>
                         <div id="buyCalcResult" class="calc-result"></div>
                         <div class="percent-buttons">
@@ -384,7 +384,7 @@
                     </div>
                     <div class="section">
                         <h2>Sell Tokens</h2>
-                        <label for="sellAmount">Amount (Tokens): <span id="tokenBalance" class="balance"></span></label>
+                        <label for="sellAmount">Amount (DGT): <span id="tokenBalance" class="balance"></span></label>
                         <input type="number" id="sellAmount" placeholder="0.0" step="0.0001" disabled>
                         <div id="sellCalcResult" class="calc-result"></div>
                         <div class="percent-buttons">
@@ -402,8 +402,8 @@
             </div>
             <div class="section">
                 <h2>Create Domain Token</h2>
-                <label for="tokenSymbol">Domain Name:</label>
-                <input type="text" id="tokenSymbol" placeholder="Enter domain name (e.g., Jace)">
+                <label for="tokenSymbol">Domain Name (e.g., DGT.gt):</label>
+                <input type="text" id="tokenSymbol" placeholder="Enter domain name (e.g., DGT.gt)">
                 <div class="action-buttons">
                     <button id="createDomainToken" class="create-btn" onclick="createDomainToken()" disabled>Create Domain Token</button>
                 </div>
@@ -418,16 +418,14 @@
     <script src="https://cdn.jsdelivr.net/npm/web3@1.7.0/dist/web3.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/big.js@6.2.1/big.min.js"></script>
     <script>
-        let web3, accounts, dGTContract, tokenFactoryContract, tokenContract;
+        let web3, accounts, delonContract, tokenFactoryContract, tokenContract;
         let currentTokenAddress = '';
-
         const WAD = Big('1e18');
         const a = Big('72750477415');
         const b = Big('4800000000');
-
-        const dGTAddress = '0x0787eA7E7dDb189D0B29c4e57666Af73c71713D3';
+        const delonAddress = '0x0787eA7E7dDb189D0B29c4e57666Af73c71713D3';
         const tokenFactoryAddress = '0x86E972d28929B2Ba3eA14e141D92Ffac41Aed270';
-        const dGTABI = [
+        const delonABI = [
             {"inputs":[],"stateMutability":"nonpayable","type":"constructor"},
             {"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"minter","type":"address"},{"indexed":false,"internalType":"uint256","name":"tokenId","type":"uint256"},{"indexed":false,"internalType":"string","name":"id","type":"string"},{"indexed":false,"internalType":"address","name":"tokenAddress","type":"address"}],"name":"Minted","type":"event"},
             {"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"owner","type":"address"},{"indexed":true,"internalType":"address","name":"approved","type":"address"},{"indexed":true,"internalType":"uint256","name":"tokenId","type":"uint256"}],"name":"Approval","type":"event"},
@@ -476,7 +474,6 @@
             {"inputs":[{"internalType":"address","name":"spender","type":"address"},{"internalType":"uint256","name":"amount","type":"uint256"}],"name":"approve","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"nonpayable","type":"function"},
             {"inputs":[{"internalType":"address","name":"from","type":"address"},{"internalType":"address","name":"to","type":"address"},{"internalType":"uint256","name":"amount","type":"uint256"}],"name":"transferFrom","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"nonpayable","type":"function"}
         ];
-
         const gateLayerChain = {
             chainId: 10088,
             rpcUrl: 'https://gatelayer-mainnet.gatenode.cc'
@@ -578,6 +575,14 @@
             return fullMulDiv(a, exp_b_x1.minus(exp_b_x0), b);
         }
 
+        function debounce(func, wait) {
+            let timeout;
+            return function (...args) {
+                clearTimeout(timeout);
+                timeout = setTimeout(() => func.apply(this, args), wait);
+            };
+        }
+
         async function connectWallet() {
             if (!window.ethereum) {
                 document.getElementById('walletStatus').innerText = 'Please install MetaMask';
@@ -611,12 +616,11 @@
                     }
                 }
                 accounts = await web3.eth.getAccounts();
-                dGTContract = new web3.eth.Contract(dGTABI, dGTAddress);
+                delonContract = new web3.eth.Contract(delonABI, delonAddress);
                 tokenFactoryContract = new web3.eth.Contract(tokenFactoryABI, tokenFactoryAddress);
                 document.getElementById('walletStatus').innerText = `Connected: ${accounts[0].slice(0, 6)}...${accounts[0].slice(-4)}`;
                 enableInputs(true);
                 await updateBalances();
-                parseUrlAndLoad();
             } catch (error) {
                 document.getElementById('walletStatus').innerText = `Connection failed: ${error.message || 'Unknown error'}`;
                 console.error('Connect wallet error:', error);
@@ -632,80 +636,83 @@
 
         async function updateBalances() {
             if (!web3 || !accounts) {
-                document.getElementById('GTBalance').innerText = 'Please connect wallet';
+                document.getElementById('gtBalance').innerText = 'Please connect wallet';
                 document.getElementById('tokenBalance').innerText = 'Please connect wallet';
                 return;
             }
             try {
                 const gtBalance = await web3.eth.getBalance(accounts[0]);
-                document.getElementById('GTBalance').innerText = `Balance: ${web3.utils.fromWei(gtBalance, 'ether')} GT`;
+                document.getElementById('gtBalance').innerText = `Balance: ${parseFloat(web3.utils.fromWei(gtBalance, 'ether')).toFixed(4)} GT`;
                 if (currentTokenAddress && web3.utils.isAddress(currentTokenAddress)) {
                     tokenContract = new web3.eth.Contract(tokenABI, currentTokenAddress);
                     const tokenBalance = await tokenContract.methods.balanceOf(accounts[0]).call();
                     const symbol = await tokenContract.methods.symbol().call();
-                    document.getElementById('tokenBalance').innerText = `Balance: ${web3.utils.fromWei(tokenBalance, 'ether')} ${symbol}`;
+                    document.getElementById('tokenBalance').innerText = `Balance: ${parseFloat(web3.utils.fromWei(tokenBalance, 'ether')).toFixed(4)} ${symbol}`;
                 } else {
                     document.getElementById('tokenBalance').innerText = 'Please search a domain';
                 }
                 await updateCalculations();
             } catch (error) {
-                document.getElementById('GTBalance').innerText = 'Failed to fetch GT balance';
+                document.getElementById('gtBalance').innerText = 'Failed to fetch GT balance';
                 document.getElementById('tokenBalance').innerText = 'Failed to fetch token balance';
+                console.error('Update balances error:', error);
             }
         }
 
-        async function updateCalculations() {
+        const debouncedUpdateCalculations = debounce(async () => {
             const buyAmount = document.getElementById('buyAmount').value;
             const sellAmount = document.getElementById('sellAmount').value;
             try {
-                if (buyAmount && parseFloat(buyAmount) > 0) {
+                if (buyAmount && parseFloat(buyAmount) > 0 && currentTokenAddress) {
                     const tokens = await getAmountOut(buyAmount);
-                    document.getElementById('buyCalcResult').innerText = `Will receive: ${web3.utils.fromWei(tokens.toFixed(0), 'ether')} tokens`;
+                    document.getElementById('buyCalcResult').innerText = `Will receive: ${parseFloat(web3.utils.fromWei(tokens.toFixed(0), 'ether')).toFixed(4)} DGT`;
                 } else {
                     document.getElementById('buyCalcResult').innerText = '';
                 }
-                if (sellAmount && parseFloat(sellAmount) > 0) {
+                if (sellAmount && parseFloat(sellAmount) > 0 && currentTokenAddress) {
                     const gt = await getFundsNeeded(sellAmount);
-                    document.getElementById('sellCalcResult').innerText = `Will receive: ${web3.utils.fromWei(gt.toFixed(0), 'ether')} GT`;
+                    document.getElementById('sellCalcResult').innerText = `Will receive: ${parseFloat(web3.utils.fromWei(gt.toFixed(0), 'ether')).toFixed(4)} GT`;
                 } else {
                     document.getElementById('sellCalcResult').innerText = '';
                 }
             } catch (error) {
                 document.getElementById('buyCalcResult').innerText = 'Calculation error';
                 document.getElementById('sellCalcResult').innerText = 'Calculation error';
+                console.error('Calculation error:', error);
             }
+        }, 300);
+
+        async function updateCalculations() {
+            await debouncedUpdateCalculations();
         }
 
         async function searchDomain() {
             let domainInput = document.getElementById('domainInput').value.trim();
             const status = document.getElementById('status');
             if (!domainInput) {
-                status.innerText = 'Please enter a valid domain (e.g., Jace)';
+                status.innerText = 'Please enter a valid domain (e.g., DGT.gt)';
                 document.getElementById('tokenInfo').style.display = 'none';
                 return;
             }
             try {
                 status.innerText = 'Searching domain...';
-                const tokenAddress = await dGTContract.methods.getTokenAddressById(domainInput).call();
+                const tokenAddress = await delonContract.methods.getTokenAddressById(domainInput).call();
                 if (tokenAddress === '0x0000000000000000000000000000000000000000') {
                     status.innerText = 'No token found for this domain';
                     document.getElementById('tokenInfo').style.display = 'none';
                     currentTokenAddress = '';
                     document.getElementById('tokenContract').value = '';
-                    window.history.replaceState({}, '', `/test/`);
                     return;
                 }
                 currentTokenAddress = tokenAddress;
                 document.getElementById('tokenContract').value = tokenAddress;
                 await fetchTokenInfo();
                 status.innerText = '';
-                window.history.replaceState({}, '', `?domain=${encodeURIComponent(domainInput)}`);
             } catch (error) {
                 status.innerText = `Domain not found or token not launched: ${error.message.includes('revert') ? error.message.split('revert')[1]?.trim() || 'Domain not registered' : error.message}`;
                 document.getElementById('tokenInfo').style.display = 'none';
                 currentTokenAddress = '';
                 document.getElementById('tokenContract').value = '';
-                window.history.replaceState({}, '', `/test/`);
             }
         }
 
@@ -752,6 +759,7 @@
                 document.querySelectorAll('.percent-buttons button').forEach(btn => btn.disabled = true);
                 document.getElementById('buyButton').disabled = true;
                 document.getElementById('sellButton').disabled = true;
+                console.error('Fetch token info error:', error);
             }
         }
 
@@ -782,6 +790,7 @@
                 await updateCalculations();
             } catch (error) {
                 document.getElementById('transactionStatus').innerText = `Failed to set amount: ${error.message}`;
+                console.error('Set percent error:', error);
             }
         }
 
@@ -808,6 +817,7 @@
                 await fetchTokenInfo();
             } catch (error) {
                 document.getElementById('transactionStatus').innerText = `Buy failed: ${error.message}`;
+                console.error('Buy tokens error:', error);
             }
         }
 
@@ -836,6 +846,7 @@
                 await fetchTokenInfo();
             } catch (error) {
                 document.getElementById('transactionStatus').innerText = `Sell failed: ${error.message}`;
+                console.error('Sell tokens error:', error);
             }
         }
 
@@ -851,8 +862,8 @@
             }
             try {
                 document.getElementById('createDomainStatus').innerText = 'Creating domain token...';
-                const gasMint = await dGTContract.methods.mint(symbol).estimateGas({ from: accounts[0] });
-                const mintTx = await dGTContract.methods.mint(symbol).send({ from: accounts[0], gas: Math.floor(gasMint * 1.2) });
+                const gasMint = await delonContract.methods.mint(symbol).estimateGas({ from: accounts[0] });
+                const mintTx = await delonContract.methods.mint(symbol).send({ from: accounts[0], gas: Math.floor(gasMint * 1.2) });
                 const tokenAddress = mintTx.events.Minted.returnValues.tokenAddress;
                 document.getElementById('createDomainStatus').innerText = `Domain token created: ${tokenAddress}`;
                 document.getElementById('tokenContract').value = tokenAddress;
@@ -861,18 +872,7 @@
                 await updateBalances();
             } catch (error) {
                 document.getElementById('createDomainStatus').innerText = `Create failed: ${error.message.includes('revert') ? error.message.split('revert')[1]?.trim() || 'Unknown reason' : error.message}`;
-            }
-        }
-
-        function parseUrlAndLoad() {
-            const urlParams = new URLSearchParams(window.location.search);
-            let domain = '';
-            if (urlParams.has('domain')) {
-                domain = decodeURIComponent(urlParams.get('domain'));
-            }
-            if (domain) {
-                document.getElementById('domainInput').value = domain;
-                searchDomain();
+                console.error('Create domain token error:', error);
             }
         }
 
