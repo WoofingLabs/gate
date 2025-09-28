@@ -328,9 +328,7 @@
             const buyAmount = document.getElementById('buyAmount').value;
             const sellAmount = document.getElementById('sellAmount').value;
             if (!currentTokenAddress || !tokenContract || !web3 || !accounts) {
-                document.getElementById('buyCalcResult').innerText = 'Please select a token and connect wallet';
-                document.getElementById('sellCalcResult').innerText = 'Please select a token and connect wallet';
-                return;
+                return; // 如果条件不满足，直接退出，不显示提示
             }
             const a = await tokenFactoryContract.methods.a().call();
             const b = await tokenFactoryContract.methods.b().call();
@@ -401,6 +399,7 @@
                 document.getElementById('tokenContract').value = tokenAddress;
                 await fetchTokenInfo();
                 status.innerText = '';
+                await updateCalculations(); // 搜索后立即触发计算
             } catch (error) {
                 status.innerText = `Domain not found or token not launched: ${error.message.includes('revert') ? error.message.split('revert')[1]?.trim() || 'Domain not registered' : error.message}`;
                 document.getElementById('tokenInfo').style.display = 'none';
