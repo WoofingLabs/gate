@@ -327,10 +327,16 @@
         const debouncedUpdateCalculations = debounce(async () => {
             const buyAmount = document.getElementById('buyAmount').value;
             const sellAmount = document.getElementById('sellAmount').value;
+            if (!currentTokenAddress || !tokenContract || !web3 || !accounts) {
+                document.getElementById('buyCalcResult').innerText = 'Please select a token and connect wallet';
+                document.getElementById('sellCalcResult').innerText = 'Please select a token and connect wallet';
+                return;
+            }
             const a = await tokenFactoryContract.methods.a().call();
             const b = await tokenFactoryContract.methods.b().call();
+            const symbol = await tokenContract.methods.symbol().call();
             try {
-                if (buyAmount && parseFloat(buyAmount) > 0 && currentTokenAddress) {
+                if (buyAmount && parseFloat(buyAmount) > 0) {
                     const totalSupply = await tokenContract.methods.totalSupply().call();
                     const contractBalance = await tokenContract.methods.balanceOf(tokenFactoryAddress).call();
                     const x0 = Big(totalSupply).minus(contractBalance);
@@ -338,22 +344,27 @@
                     const deltaX = await getAmountOut(Big(a), Big(b), x0, deltaY);
                     const fundingSupply = Big('800000000000000000000000000'); // 800M * 10^18
                     const availableSupply = fundingSupply.minus(x0);
-                    if (deltaX.lte(availableSupply)) {
-                        const symbol = await tokenContract.methods.symbol().call();
+                    if (deltaX.lte(availableSupply) && deltaX.gte(0)) {
                         document.getElementById('buyCalcResult').innerText = `Will receive: ${parseFloat(web3.utils.fromWei(deltaX.toFixed(0), 'ether')).toFixed(4)} ${symbol}`;
+                    } else if (deltaX.lt(0)) {
+                        document.getElementById('buyCalcResult').innerText = 'Invalid calculation: Negative amount';
                     } else {
                         document.getElementById('buyCalcResult').innerText = 'Insufficient token supply';
                     }
                 } else {
                     document.getElementById('buyCalcResult').innerText = '';
                 }
-                if (sellAmount && parseFloat(sellAmount) > 0 && currentTokenAddress) {
+                if (sellAmount && parseFloat(sellAmount) > 0) {
                     const totalSupply = await tokenContract.methods.totalSupply().call();
                     const contractBalance = await tokenContract.methods.balanceOf(tokenFactoryAddress).call();
                     const x0 = Big(totalSupply).minus(contractBalance);
                     const deltaX = Big(web3.utils.toWei(sellAmount.toString(), 'ether'));
                     const deltaY = await getFundsNeeded(Big(a), Big(b), x0, deltaX);
-                    document.getElementById('sellCalcResult').innerText = `Will receive: ${parseFloat(web3.utils.fromWei(deltaY.toFixed(0), 'ether')).toFixed(4)} GT`;
+                    if (deltaY.gte(0)) {
+                        document.getElementById('sellCalcResult').innerText = `Will receive: ${parseFloat(web3.utils.fromWei(deltaY.toFixed(0), 'ether')).toFixed(4)} GT`;
+                    } else {
+                        document.getElementById('sellCalcResult').innerText = 'Invalid calculation: Negative amount';
+                    }
                 } else {
                     document.getElementById('sellCalcResult').innerText = '';
                 }
