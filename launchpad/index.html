@@ -1,0 +1,896 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="test: Create, trade, and manage tokens on Gate Layer blockchain. Connect with MetaMask to explore.">
+    <meta name="keywords" content="test, Gate Layer, blockchain, token, Web3, cryptocurrency">
+    <meta name="robots" content="index, follow">
+    <title>test - Token Trading</title>
+    <base href="/test/">
+    <link rel="icon" href="https://swap.woofingjace.com/image/header/logo.png" type="image/png">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@200;400;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Roboto Mono', monospace;
+            background: #000000;
+            color: #FFFFFF;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .container {
+            width: 100%;
+            max-width: 800px;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 1.5rem;
+        }
+        .header {
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+        .logo {
+            width: 100px;
+            height: 50px;
+            object-fit: contain;
+        }
+        .nav-buttons {
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+        }
+        .nav-buttons button {
+            background: #000000;
+            border: 2px solid #00FF00;
+            border-radius: 8px;
+            padding: 0.7rem 1.2rem;
+            color: #FFFFFF;
+            font-size: 0.9rem;
+            font-weight: 400;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .nav-buttons button:hover {
+            background: #00FF00;
+            color: #000000;
+            box-shadow: 0 0 15px rgba(0, 255, 0, 0.6);
+            transform: translateY(-2px);
+        }
+        .nav-buttons button:disabled {
+            opacity: 0.5;
+            pointer-events: none;
+        }
+        .address-bar {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            background: #000000;
+            border: 2px solid #00FF00;
+            border-radius: 10px;
+            padding: 0.4rem;
+            margin-left: 1rem;
+            box-shadow: 0 0 15px rgba(0, 255, 0, 0.2);
+        }
+        .address-bar input {
+            flex: 1;
+            border: none;
+            outline: none;
+            font-size: 0.9rem;
+            padding: 0.5rem;
+            background: transparent;
+            color: #FFFFFF;
+        }
+        .address-bar input:focus {
+            border-bottom: 1px solid #00FF00;
+        }
+        .address-bar input::placeholder {
+            color: #BBBBBB;
+        }
+        .address-bar button {
+            background: #00FF00;
+            color: #000000;
+            border: none;
+            border-radius: 8px;
+            padding: 0.7rem 1.2rem;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 400;
+            transition: all 0.3s ease;
+        }
+        .address-bar button:hover {
+            background: #FFFFFF;
+            box-shadow: 0 0 15px rgba(0, 255, 0, 0.6);
+            transform: translateY(-2px);
+        }
+        .content {
+            flex: 1;
+            width: 100%;
+            padding: 1rem;
+            overflow-y: auto;
+        }
+        .section {
+            width: 100%;
+            background: #000000;
+            padding: 1.2rem;
+            border-radius: 8px;
+            margin-bottom: 1.2rem;
+            box-shadow: 0 0 15px rgba(0, 255, 0, 0.2);
+            border: 1px solid #00FF00;
+        }
+        h2 {
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: #00FF00;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            margin-bottom: 0.8rem;
+        }
+        label {
+            display: block;
+            margin-bottom: 0.4rem;
+            font-size: 0.9rem;
+            font-weight: 400;
+            color: #BBBBBB;
+        }
+        input {
+            width: 100%;
+            padding: 0.7rem;
+            margin-bottom: 0.7rem;
+            background: #000000;
+            border: 1px solid #00FF00;
+            color: #FFFFFF;
+            border-radius: 6px;
+            font-size: 0.9rem;
+        }
+        input:focus {
+            outline: none;
+            box-shadow: 0 0 10px rgba(0, 255, 0, 0.4);
+        }
+        button {
+            padding: 0.7rem 1.2rem;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 400;
+            transition: all 0.3s ease;
+        }
+        .buy-btn {
+            background: #00FF00;
+            color: #000000;
+        }
+        .buy-btn:hover {
+            background: #FFFFFF;
+            box-shadow: 0 0 12px rgba(0, 255, 0, 0.6);
+            transform: translateY(-2px);
+        }
+        .sell-btn {
+            background: #FF0000;
+            color: #FFFFFF;
+        }
+        .sell-btn:hover {
+            background: #FF3333;
+            box-shadow: 0 0 12px rgba(255, 0, 0, 0.6);
+            transform: translateY(-2px);
+        }
+        .create-btn {
+            background: #00FF00;
+            color: #000000;
+        }
+        .create-btn:hover {
+            background: #FFFFFF;
+            box-shadow: 0 0 12px rgba(0, 255, 0, 0.6);
+            transform: translateY(-2px);
+        }
+        .action-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 0.8rem;
+            margin: 0.8rem 0;
+        }
+        .percent-buttons {
+            margin: 0.6rem 0;
+            display: flex;
+            gap: 0.4rem;
+        }
+        .percent-buttons button {
+            flex: 1;
+            padding: 0.5rem;
+            font-size: 0.8rem;
+            background: #000000;
+            border: 1px solid #00FF00;
+            color: #FFFFFF;
+            border-radius: 6px;
+        }
+        .percent-buttons button:hover {
+            background: rgba(0, 255, 0, 0.1);
+            color: #00FF00;
+        }
+        .status {
+            font-size: 0.8rem;
+            color: #FF0000;
+            text-align: center;
+            margin-top: 0.5rem;
+        }
+        .balance {
+            margin: 0.4rem 0;
+            font-size: 0.8rem;
+            display: inline-block;
+            margin-left: 0.4rem;
+            color: #BBBBBB;
+        }
+        .calc-result {
+            font-size: 0.8rem;
+            color: #00FF00;
+            margin-top: 0.4rem;
+            display: inline-block;
+            margin-left: 0.4rem;
+        }
+        .disabled {
+            opacity: 0.5;
+            pointer-events: none;
+        }
+        .progress-bar {
+            width: 100%;
+            background: #000000;
+            height: 16px;
+            border-radius: 6px;
+            overflow: hidden;
+            margin-top: 0.6rem;
+            border: 1px solid #00FF00;
+        }
+        .progress {
+            height: 100%;
+            background: #00FF00;
+            transition: width 0.3s;
+        }
+        .token-info {
+            display: none;
+        }
+        footer {
+            margin-top: auto;
+            padding: 1.2rem;
+            text-align: center;
+            color: #BBBBBB;
+            font-size: 0.8rem;
+        }
+        footer a {
+            color: #00FF00;
+            text-decoration: none;
+            transition: color 0.3s ease;
+        }
+        footer a:hover {
+            color: #FFFFFF;
+            text-decoration: underline;
+        }
+        @media (max-width: 768px) {
+            .container {
+                padding: 1rem;
+            }
+            .header {
+                flex-direction: column;
+                align-items: center;
+                gap: 0.8rem;
+            }
+            .logo {
+                width: 80px;
+                height: 40px;
+            }
+            .nav-buttons button {
+                padding: 0.5rem 1rem;
+                font-size: 0.8rem;
+            }
+            .address-bar {
+                margin-left: 0;
+                margin-bottom: 1rem;
+            }
+            .address-bar input {
+                font-size: 0.8rem;
+            }
+            .address-bar button {
+                padding: 0.5rem 1rem;
+                font-size: 0.8rem;
+            }
+            .content {
+                padding: 0.8rem;
+            }
+            .section {
+                padding: 1rem;
+            }
+            h2 {
+                font-size: 1.1rem;
+            }
+            input {
+                font-size: 0.8rem;
+                padding: 0.5rem;
+            }
+            button {
+                padding: 0.5rem 1rem;
+                font-size: 0.8rem;
+            }
+            .percent-buttons button {
+                font-size: 0.7rem;
+                padding: 0.4rem;
+            }
+            .balance, .calc-result {
+                display: block;
+                margin-left: 0;
+                font-size: 0.7rem;
+            }
+            .status {
+                font-size: 0.7rem;
+            }
+            footer {
+                padding: 1rem;
+                font-size: 0.7rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <img src="https://swap.woofingjace.com/image/header/logo.png" alt="test" class="logo">
+            <div class="nav-buttons">
+                <button id="connectWallet">Connect Wallet</button>
+            </div>
+            <div class="address-bar">
+                <input type="text" id="domainInput" placeholder="Enter domain (e.g., Jace)">
+                <button id="searchButton">Search</button>
+            </div>
+        </div>
+        <div class="content">
+            <div id="status" class="status"></div>
+            <div class="section">
+                <h2>Wallet Status</h2>
+                <div id="walletStatus" class="status">Not Connected</div>
+            </div>
+            <div class="section">
+                <h2>Token Operations</h2>
+                <label for="tokenContract">Token Contract Address:</label>
+                <input type="text" id="tokenContract" placeholder="Token address will be populated after search" readonly>
+                <div id="tokenInfo" class="token-info">
+                    <div id="tokenDetails" class="status"></div>
+                    <div id="progressResult" class="status"></div>
+                    <div class="progress-bar"><div id="progressBar" class="progress" style="width: 0%;"></div></div>
+                    <div class="section">
+                        <h2>Buy Tokens</h2>
+                        <label for="buyAmount">Amount (GT): <span id="GTBalance" class="balance"></span></label>
+                        <input type="number" id="buyAmount" placeholder="0.0" step="0.0001" disabled>
+                        <div id="buyCalcResult" class="calc-result"></div>
+                        <div class="percent-buttons">
+                            <button onclick="setPercent(25, 'buy')" disabled>25%</button>
+                            <button onclick="setPercent(50, 'buy')" disabled>50%</button>
+                            <button onclick="setPercent(75, 'buy')" disabled>75%</button>
+                            <button onclick="setPercent(100, 'buy')" disabled>Max</button>
+                        </div>
+                        <div class="action-buttons">
+                            <button id="buyButton" class="buy-btn" onclick="buyTokens()" disabled>Buy Tokens</button>
+                        </div>
+                    </div>
+                    <div class="section">
+                        <h2>Sell Tokens</h2>
+                        <label for="sellAmount">Amount (Tokens): <span id="tokenBalance" class="balance"></span></label>
+                        <input type="number" id="sellAmount" placeholder="0.0" step="0.0001" disabled>
+                        <div id="sellCalcResult" class="calc-result"></div>
+                        <div class="percent-buttons">
+                            <button onclick="setPercent(25, 'sell')" disabled>25%</button>
+                            <button onclick="setPercent(50, 'sell')" disabled>50%</button>
+                            <button onclick="setPercent(75, 'sell')" disabled>75%</button>
+                            <button onclick="setPercent(100, 'sell')" disabled>Max</button>
+                        </div>
+                        <div class="action-buttons">
+                            <button id="sellButton" class="sell-btn" onclick="sellTokens()" disabled>Sell Tokens</button>
+                        </div>
+                    </div>
+                    <div id="transactionStatus" class="status"></div>
+                </div>
+            </div>
+            <div class="section">
+                <h2>Create Domain Token</h2>
+                <label for="tokenSymbol">Domain Name:</label>
+                <input type="text" id="tokenSymbol" placeholder="Enter domain name (e.g., Jace)">
+                <div class="action-buttons">
+                    <button id="createDomainToken" class="create-btn" onclick="createDomainToken()" disabled>Create Domain Token</button>
+                </div>
+                <div id="createDomainStatus" class="status"></div>
+            </div>
+        </div>
+        <footer>
+            <p>Powered by <a href="https://x.com/WoofingJace" target="_blank">WoofingJace</a> & <a href="https://www.gatescan.org/gatelayer" target="_blank">Gate Layer</a> © 2025</p>
+            <p style="margin-top: 0.5rem;">Not financial advice. Always DYOR!</p>
+        </footer>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/web3@1.7.0/dist/web3.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/big.js@6.2.1/big.min.js"></script>
+    <script>
+        let web3, accounts, dGTContract, tokenFactoryContract, tokenContract;
+        let currentTokenAddress = '';
+
+        const WAD = Big('1e18');
+        const a = Big('72750477415');
+        const b = Big('4800000000');
+
+        const dGTAddress = '0x0787eA7E7dDb189D0B29c4e57666Af73c71713D3';
+        const tokenFactoryAddress = '0x86E972d28929B2Ba3eA14e141D92Ffac41Aed270';
+        const dGTABI = [
+            {"inputs":[],"stateMutability":"nonpayable","type":"constructor"},
+            {"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"minter","type":"address"},{"indexed":false,"internalType":"uint256","name":"tokenId","type":"uint256"},{"indexed":false,"internalType":"string","name":"id","type":"string"},{"indexed":false,"internalType":"address","name":"tokenAddress","type":"address"}],"name":"Minted","type":"event"},
+            {"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"owner","type":"address"},{"indexed":true,"internalType":"address","name":"approved","type":"address"},{"indexed":true,"internalType":"uint256","name":"tokenId","type":"uint256"}],"name":"Approval","type":"event"},
+            {"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"owner","type":"address"},{"indexed":true,"internalType":"address","name":"operator","type":"address"},{"indexed":false,"internalType":"bool","name":"approved","type":"bool"}],"name":"ApprovalForAll","type":"event"},
+            {"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"from","type":"address"},{"indexed":true,"internalType":"address","name":"to","type":"address"},{"indexed":true,"internalType":"uint256","name":"tokenId","type":"uint256"}],"name":"Transfer","type":"event"},
+            {"inputs":[{"internalType":"address","name":"to","type":"address"},{"internalType":"uint256","name":"tokenId","type":"uint256"}],"name":"approve","outputs":[],"stateMutability":"nonpayable","type":"function"},
+            {"inputs":[{"internalType":"address","name":"owner","type":"address"}],"name":"balanceOf","outputs":[{"internalType":"uint256","name":"balance","type":"uint256"}],"stateMutability":"view","type":"function"},
+            {"inputs":[{"internalType":"string","name":"_id","type":"string"}],"name":"getIdByTokenId","outputs":[{"internalType":"string","name":"","type":"string"}],"stateMutability":"view","type":"function"},
+            {"inputs":[{"internalType":"address","name":"tokenAddress","type":"address"}],"name":"getIdByTokenAddress","outputs":[{"internalType":"string","name":"","type":"string"}],"stateMutability":"view","type":"function"},
+            {"inputs":[{"internalType":"string","name":"_id","type":"string"}],"name":"getTokenAddressById","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},
+            {"inputs":[{"internalType":"address","name":"tokenAddress","type":"address"}],"name":"getTokenIdByTokenAddress","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},
+            {"inputs":[{"internalType":"string","name":"_id","type":"string"}],"name":"getTokenIdById","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},
+            {"inputs":[{"internalType":"uint256","name":"tokenId","type":"uint256"}],"name":"getApproved","outputs":[{"internalType":"address","name":"operator","type":"address"}],"stateMutability":"view","type":"function"},
+            {"inputs":[{"internalType":"address","name":"owner","type":"address"},{"internalType":"address","name":"operator","type":"address"}],"name":"isApprovedForAll","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"view","type":"function"},
+            {"inputs":[{"internalType":"string","name":"_id","type":"string"}],"name":"mint","outputs":[],"stateMutability":"nonpayable","type":"function"},
+            {"inputs":[],"name":"name","outputs":[{"internalType":"string","name":"","type":"string"}],"stateMutability":"view","type":"function"},
+            {"inputs":[{"internalType":"uint256","name":"tokenId","type":"uint256"}],"name":"ownerOf","outputs":[{"internalType":"address","name":"owner","type":"address"}],"stateMutability":"view","type":"function"},
+            {"inputs":[{"internalType":"address","name":"from","type":"address"},{"internalType":"address","name":"to","type":"address"},{"internalType":"uint256","name":"tokenId","type":"uint256"}],"name":"safeTransferFrom","outputs":[],"stateMutability":"nonpayable","type":"function"},
+            {"inputs":[{"internalType":"address","name":"from","type":"address"},{"internalType":"address","name":"to","type":"address"},{"internalType":"uint256","name":"tokenId","type":"uint256"},{"internalType":"bytes","name":"data","type":"bytes"}],"name":"safeTransferFrom","outputs":[],"stateMutability":"nonpayable","type":"function"},
+            {"inputs":[{"internalType":"address","name":"operator","type":"address"},{"internalType":"bool","name":"_approved","type":"bool"}],"name":"setApprovalForAll","outputs":[],"stateMutability":"nonpayable","type":"function"},
+            {"inputs":[{"internalType":"bytes4","name":"interfaceId","type":"bytes4"}],"name":"supportsInterface","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"view","type":"function"},
+            {"inputs":[],"name":"symbol","outputs":[{"internalType":"string","name":"","type":"string"}],"stateMutability":"view","type":"function"},
+            {"inputs":[{"internalType":"uint256","name":"index","type":"uint256"}],"name":"tokenByIndex","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},
+            {"inputs":[{"internalType":"address","name":"owner","type":"address"},{"internalType":"uint256","name":"index","type":"uint256"}],"name":"tokenOfOwnerByIndex","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},
+            {"inputs":[{"internalType":"uint256","name":"tokenId","type":"uint256"}],"name":"tokenName","outputs":[{"internalType":"string","name":"","type":"string"}],"stateMutability":"view","type":"function"},
+            {"inputs":[{"internalType":"uint256","name":"tokenId","type":"uint256"}],"name":"tokenURI","outputs":[{"internalType":"string","name":"","type":"string"}],"stateMutability":"view","type":"function"},
+            {"inputs":[],"name":"totalSupply","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},
+            {"inputs":[{"internalType":"address","name":"from","type":"address"},{"internalType":"address","name":"to","type":"address"},{"internalType":"uint256","name":"tokenId","type":"uint256"}],"name":"transferFrom","outputs":[],"stateMutability":"nonpayable","type":"function"}
+        ];
+        const tokenFactoryABI = [
+            {"inputs":[{"internalType":"address","name":"_router","type":"address"},{"internalType":"address","name":"_tokenImplementation","type":"address"},{"internalType":"uint256","name":"_feePercent","type":"uint256"},{"internalType":"uint256","name":"_funding","type":"uint256"},{"internalType":"uint256","name":"_a","type":"uint256"},{"internalType":"uint256","name":"_b","type":"uint256"},{"internalType":"address","name":"_lp","type":"address"}],"name":"initialize","outputs":[],"stateMutability":"nonpayable","type":"function"},
+            {"inputs":[{"internalType":"string","name":"name","type":"string"},{"internalType":"string","name":"symbol","type":"string"}],"name":"createToken","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"nonpayable","type":"function"},
+            {"inputs":[{"internalType":"address","name":"tokenAddress","type":"address"}],"name":"buyTokens","outputs":[],"stateMutability":"payable","type":"function"},
+            {"inputs":[{"internalType":"address","name":"tokenAddress","type":"address"},{"internalType":"uint256","name":"amount","type":"uint256"}],"name":"sellTokens","outputs":[],"stateMutability":"nonpayable","type":"function"},
+            {"inputs":[{"internalType":"address","name":"","type":"address"}],"name":"collateral","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},
+            {"inputs":[{"internalType":"address","name":"","type":"address"}],"name":"tokens","outputs":[{"internalType":"enum TokenFactory.TokenState","name":"","type":"uint8"}],"stateMutability":"view","type":"function"},
+            {"inputs":[],"name":"FUNDING_GOAL","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"}
+        ];
+        const tokenABI = [
+            {"inputs":[{"internalType":"string","name":"name","type":"string"},{"internalType":"string","name":"symbol","type":"string"},{"internalType":"uint256","name":"amount","type":"uint256"}],"name":"initialize","outputs":[],"stateMutability":"nonpayable","type":"function"},
+            {"inputs":[{"internalType":"address","name":"owner","type":"address"}],"name":"balanceOf","outputs":[{"internalType":"uint256","name":"balance","type":"uint256"}],"stateMutability":"view","type":"function"},
+            {"inputs":[],"name":"totalSupply","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},
+            {"inputs":[],"name":"name","outputs":[{"internalType":"string","name":"","type":"string"}],"stateMutability":"view","type":"function"},
+            {"inputs":[],"name":"symbol","outputs":[{"internalType":"string","name":"","type":"string"}],"stateMutability":"view","type":"function"},
+            {"inputs":[{"internalType":"address","name":"to","type":"address"},{"internalType":"uint256","name":"amount","type":"uint256"}],"name":"transfer","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"nonpayable","type":"function"},
+            {"inputs":[{"internalType":"address","name":"spender","type":"address"},{"internalType":"uint256","name":"amount","type":"uint256"}],"name":"approve","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"nonpayable","type":"function"},
+            {"inputs":[{"internalType":"address","name":"from","type":"address"},{"internalType":"address","name":"to","type":"address"},{"internalType":"uint256","name":"amount","type":"uint256"}],"name":"transferFrom","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"nonpayable","type":"function"}
+        ];
+
+        const gateLayerChain = {
+            chainId: 10088,
+            rpcUrl: 'https://gatelayer-mainnet.gatenode.cc'
+        };
+
+        function mulWad(x, y) {
+            return x.times(y).div(WAD);
+        }
+
+        function expWad(x) {
+            if (x.lte(-41446531673892822313)) return Big(0);
+            if (x.gte(135305999368893231589)) throw new Error('ExpOverflow');
+            let xScaled = x.times(Big(2).pow(78)).div(Big(5).pow(18));
+            const LN2 = Big('54916777467707473351141471128');
+            let k = xScaled.times(Big(2).pow(96)).div(LN2).plus(Big(2).pow(95)).div(Big(2).pow(96)).round(0, 0);
+            xScaled = xScaled.minus(k.times(LN2));
+            let y = xScaled.plus(Big('1346386616545796478920950773328'));
+            y = y.times(xScaled).div(Big(2).pow(96)).plus(Big('57155421227552351082224309758442'));
+            let p = y.plus(xScaled).minus(Big('94201549194550492254356042504812'));
+            p = p.times(y).div(Big(2).pow(96)).plus(Big('28719021644029726153956944680412240'));
+            p = p.times(xScaled).plus(Big('4385272521454847904659076985693276').times(Big(2).pow(96)));
+            let q = xScaled.minus(Big('2855989394907223263936484059900'));
+            q = q.times(xScaled).div(Big(2).pow(96)).plus(Big('50020603652535783019961831881945'));
+            q = q.times(xScaled).div(Big(2).pow(96)).minus(Big('533845033583426703283633433725380'));
+            q = q.times(xScaled).div(Big(2).pow(96)).plus(Big('3604857256930695427073651918091429'));
+            q = q.times(xScaled).div(Big(2).pow(96)).minus(Big('14423608567350463180887372962807573'));
+            q = q.times(xScaled).div(Big(2).pow(96)).plus(Big('26449188498355588339934803723976023'));
+            let r = p.div(q);
+            const SCALE_FACTOR = Big('3822833074963236453042738258902158003155416615667');
+            r = r.times(SCALE_FACTOR).div(Big(2).pow(195 - k.toNumber()));
+            return r;
+        }
+
+        function lnWad(x) {
+            if (x.lte(0)) throw new Error('LnWadUndefined');
+            let r = Big(0);
+            if (x.gt(Big(2).pow(128))) r = r.plus(Big(2).pow(7));
+            if (x.shr(r).gt(Big(2).pow(64))) r = r.plus(Big(2).pow(6));
+            if (x.shr(r).gt(Big(2).pow(32))) r = r.plus(Big(2).pow(5));
+            if (x.shr(r).gt(Big(2).pow(16))) r = r.plus(Big(2).pow(4));
+            if (x.shr(r).gt(Big(2).pow(8))) r = r.plus(Big(2).pow(3));
+            const lookup = [7,6,6,5,6,2,5,4,6,2,3,2,5,4,3,1,6,5,2,5,3,3,4,1,5,5,3,4,0,0,0,0];
+            let byteIndex = (x.shr(r).div(Big('8421084210842108cc6318c6db6d54be')).toNumber() & 0x1f);
+            r = r.plus(lookup[byteIndex]);
+            x = x.times(Big(2).pow(r)).div(Big(2).pow(159));
+            let p = x.plus(Big('3273285459638523848632254066296')).times(x).div(Big(2).pow(96)).plus(Big('24828157081833163892658089445524')).times(x).div(Big(2).pow(96)).plus(Big('43456485725739037958740375743393')).times(x).div(Big(2).pow(96)).minus(Big('11111509109440967052023855526967'));
+            p = p.times(x).div(Big(2).pow(96)).minus(Big('45023709667254063763336534515857'));
+            p = p.times(x).div(Big(2).pow(96)).minus(Big('14706773417378608786704636184526'));
+            p = p.times(x).minus(Big('795164235651350426258249787498').times(Big(2).pow(96)));
+            let q = x.plus(Big('5573035233440673466300451813936'));
+            q = q.times(x).div(Big(2).pow(96)).plus(Big('71694874799317883764090561454958'));
+            q = q.times(x).div(Big(2).pow(96)).plus(Big('283447036172924575727196451306956'));
+            q = q.times(x).div(Big(2).pow(96)).plus(Big('401686690394027663651624208769553'));
+            q = q.times(x).div(Big(2).pow(96)).plus(Big('204048457590392012362485061816622'));
+            q = q.times(x).div(Big(2).pow(96)).plus(Big('31853899698501571402653359427138'));
+            q = q.times(x).div(Big(2).pow(96)).plus(Big('909429971244387300277376558375'));
+            p = p.div(q);
+            p = p.times(Big('1677202110996718588342820967067443963516166'));
+            p = p.plus(Big('16597577552685614221487285958193947469193820559219878177908093499208371').times(159 - r));
+            p = p.plus(Big('600920179829731861736702779321621459595472258049074101567377883020018308'));
+            return p.div(Big(2).pow(174));
+        }
+
+        function fullMulDiv(x, y, d) {
+            let result = x.times(y);
+            let mm = x.times(y).mod(Big(2).pow(256));
+            let p1 = mm.minus(result.plus(mm.lt(result) ? 1 : 0));
+            let t = d.and(d.neg());
+            let r = x.times(y).mod(d);
+            d = d.div(t);
+            let inv = Big(2).xor(d.times(3));
+            inv = inv.times(Big(2).minus(d.times(inv)));
+            inv = inv.times(Big(2).minus(d.times(inv)));
+            inv = inv.times(Big(2).minus(d.times(inv)));
+            inv = inv.times(Big(2).minus(d.times(inv)));
+            inv = inv.times(Big(2).minus(d.times(inv)));
+            return Big(p1.minus(r.gt(result) ? 1 : 0).times((Big(2).pow(256).div(t).plus(1))).plus(result.minus(r).div(t))).times(Big(2).minus(d.times(inv)).times(inv));
+        }
+
+        async function getAmountOut(amountGT) {
+            if (!currentTokenAddress || !tokenContract) return Big(0);
+            const totalSupply = await tokenContract.methods.totalSupply().call();
+            const contractBalance = await tokenContract.methods.balanceOf(tokenFactoryAddress).call();
+            const x0 = Big(totalSupply).minus(contractBalance);
+            const deltaY = Big(web3.utils.toWei(amountGT.toString(), 'ether'));
+            const exp_b_x0 = expWad(mulWad(b, x0));
+            const exp_b_x1 = exp_b_x0.plus(fullMulDiv(deltaY, b, a));
+            return Big(lnWad(exp_b_x1)).div(b.div(WAD)).minus(x0);
+        }
+
+        async function getFundsNeeded(amountTokens) {
+            if (!currentTokenAddress || !tokenContract) return Big(0);
+            const totalSupply = await tokenContract.methods.totalSupply().call();
+            const contractBalance = await tokenContract.methods.balanceOf(tokenFactoryAddress).call();
+            const x0 = Big(totalSupply).minus(contractBalance);
+            const deltaX = Big(web3.utils.toWei(amountTokens.toString(), 'ether'));
+            const exp_b_x0 = expWad(mulWad(b, x0));
+            const exp_b_x1 = expWad(mulWad(b, x0.plus(deltaX)));
+            return fullMulDiv(a, exp_b_x1.minus(exp_b_x0), b);
+        }
+
+        async function connectWallet() {
+            if (!window.ethereum) {
+                document.getElementById('walletStatus').innerText = 'Please install MetaMask';
+                return;
+            }
+            try {
+                web3 = new Web3(window.ethereum);
+                await window.ethereum.request({ method: 'eth_requestAccounts' });
+                const chainId = Number(await web3.eth.getChainId());
+                if (chainId !== gateLayerChain.chainId) {
+                    try {
+                        await window.ethereum.request({
+                            method: 'wallet_switchEthereumChain',
+                            params: [{ chainId: web3.utils.toHex(gateLayerChain.chainId) }]
+                        });
+                    } catch (switchError) {
+                        if (switchError.code === 4902) {
+                            await window.ethereum.request({
+                                method: 'wallet_addEthereumChain',
+                                params: [{
+                                    chainId: web3.utils.toHex(gateLayerChain.chainId),
+                                    chainName: 'Gate Layer',
+                                    rpcUrls: [gateLayerChain.rpcUrl],
+                                    nativeCurrency: { name: 'GT', symbol: 'GT', decimals: 18 },
+                                    blockExplorerUrls: ['https://www.gatescan.org/gatelayer']
+                                }]
+                            });
+                        } else {
+                            throw switchError;
+                        }
+                    }
+                }
+                accounts = await web3.eth.getAccounts();
+                dGTContract = new web3.eth.Contract(dGTABI, dGTAddress);
+                tokenFactoryContract = new web3.eth.Contract(tokenFactoryABI, tokenFactoryAddress);
+                document.getElementById('walletStatus').innerText = `Connected: ${accounts[0].slice(0, 6)}...${accounts[0].slice(-4)}`;
+                enableInputs(true);
+                await updateBalances();
+                parseUrlAndLoad();
+            } catch (error) {
+                document.getElementById('walletStatus').innerText = `Connection failed: ${error.message || 'Unknown error'}`;
+                console.error('Connect wallet error:', error);
+            }
+        }
+
+        function enableInputs(enabled) {
+            document.getElementById('tokenSymbol').disabled = !enabled;
+            document.getElementById('createDomainToken').disabled = !enabled;
+            document.getElementById('buyAmount').disabled = !enabled;
+            document.getElementById('sellAmount').disabled = !enabled;
+        }
+
+        async function updateBalances() {
+            if (!web3 || !accounts) {
+                document.getElementById('GTBalance').innerText = 'Please connect wallet';
+                document.getElementById('tokenBalance').innerText = 'Please connect wallet';
+                return;
+            }
+            try {
+                const gtBalance = await web3.eth.getBalance(accounts[0]);
+                document.getElementById('GTBalance').innerText = `Balance: ${web3.utils.fromWei(gtBalance, 'ether')} GT`;
+                if (currentTokenAddress && web3.utils.isAddress(currentTokenAddress)) {
+                    tokenContract = new web3.eth.Contract(tokenABI, currentTokenAddress);
+                    const tokenBalance = await tokenContract.methods.balanceOf(accounts[0]).call();
+                    const symbol = await tokenContract.methods.symbol().call();
+                    document.getElementById('tokenBalance').innerText = `Balance: ${web3.utils.fromWei(tokenBalance, 'ether')} ${symbol}`;
+                } else {
+                    document.getElementById('tokenBalance').innerText = 'Please search a domain';
+                }
+                await updateCalculations();
+            } catch (error) {
+                document.getElementById('GTBalance').innerText = 'Failed to fetch GT balance';
+                document.getElementById('tokenBalance').innerText = 'Failed to fetch token balance';
+            }
+        }
+
+        async function updateCalculations() {
+            const buyAmount = document.getElementById('buyAmount').value;
+            const sellAmount = document.getElementById('sellAmount').value;
+            try {
+                if (buyAmount && parseFloat(buyAmount) > 0) {
+                    const tokens = await getAmountOut(buyAmount);
+                    document.getElementById('buyCalcResult').innerText = `Will receive: ${web3.utils.fromWei(tokens.toFixed(0), 'ether')} tokens`;
+                } else {
+                    document.getElementById('buyCalcResult').innerText = '';
+                }
+                if (sellAmount && parseFloat(sellAmount) > 0) {
+                    const gt = await getFundsNeeded(sellAmount);
+                    document.getElementById('sellCalcResult').innerText = `Will receive: ${web3.utils.fromWei(gt.toFixed(0), 'ether')} GT`;
+                } else {
+                    document.getElementById('sellCalcResult').innerText = '';
+                }
+            } catch (error) {
+                document.getElementById('buyCalcResult').innerText = 'Calculation error';
+                document.getElementById('sellCalcResult').innerText = 'Calculation error';
+            }
+        }
+
+        async function searchDomain() {
+            let domainInput = document.getElementById('domainInput').value.trim();
+            const status = document.getElementById('status');
+            if (!domainInput) {
+                status.innerText = 'Please enter a valid domain (e.g., Jace)';
+                document.getElementById('tokenInfo').style.display = 'none';
+                return;
+            }
+            try {
+                status.innerText = 'Searching domain...';
+                const tokenAddress = await dGTContract.methods.getTokenAddressById(domainInput).call();
+                if (tokenAddress === '0x0000000000000000000000000000000000000000') {
+                    status.innerText = 'No token found for this domain';
+                    document.getElementById('tokenInfo').style.display = 'none';
+                    currentTokenAddress = '';
+                    document.getElementById('tokenContract').value = '';
+                    window.history.replaceState({}, '', `/test/`);
+                    return;
+                }
+                currentTokenAddress = tokenAddress;
+                document.getElementById('tokenContract').value = tokenAddress;
+                await fetchTokenInfo();
+                status.innerText = '';
+                window.history.replaceState({}, '', `?domain=${encodeURIComponent(domainInput)}`);
+            } catch (error) {
+                status.innerText = `Domain not found or token not launched: ${error.message.includes('revert') ? error.message.split('revert')[1]?.trim() || 'Domain not registered' : error.message}`;
+                document.getElementById('tokenInfo').style.display = 'none';
+                currentTokenAddress = '';
+                document.getElementById('tokenContract').value = '';
+                window.history.replaceState({}, '', `/test/`);
+            }
+        }
+
+        async function fetchTokenInfo() {
+            if (!currentTokenAddress || !web3.utils.isAddress(currentTokenAddress)) {
+                document.getElementById('tokenInfo').style.display = 'none';
+                document.getElementById('progressResult').innerText = '';
+                document.getElementById('progressBar').style.width = '0%';
+                document.getElementById('buyAmount').disabled = true;
+                document.getElementById('sellAmount').disabled = true;
+                document.querySelectorAll('.percent-buttons button').forEach(btn => btn.disabled = true);
+                document.getElementById('buyButton').disabled = true;
+                document.getElementById('sellButton').disabled = true;
+                document.getElementById('tokenBalance').innerText = 'Please search a domain';
+                return;
+            }
+            try {
+                tokenContract = new web3.eth.Contract(tokenABI, currentTokenAddress);
+                const name = await tokenContract.methods.name().call();
+                const symbol = await tokenContract.methods.symbol().call();
+                const tokenState = await tokenFactoryContract.methods.tokens(currentTokenAddress).call();
+                const collateral = await tokenFactoryContract.methods.collateral(currentTokenAddress).call();
+                const fundingGoal = await tokenFactoryContract.methods.FUNDING_GOAL().call();
+                const progress = (Number(collateral) / Number(fundingGoal)) * 100;
+                document.getElementById('tokenDetails').innerText = `Token: ${name} (${symbol})`;
+                document.getElementById('progressResult').innerText = `Funding Progress: ${progress.toFixed(2)}% (State: ${['Not Created', 'Funding', 'Trading'][tokenState]})`;
+                document.getElementById('progressBar').style.width = `${Math.min(progress, 100)}%`;
+                document.getElementById('tokenInfo').style.display = 'block';
+                const isFunding = tokenState == 1 && accounts;
+                document.getElementById('buyAmount').disabled = !isFunding;
+                document.getElementById('sellAmount').disabled = !isFunding;
+                document.querySelectorAll('.percent-buttons button').forEach(btn => btn.disabled = !isFunding);
+                document.getElementById('buyButton').disabled = !isFunding;
+                document.getElementById('sellButton').disabled = !isFunding;
+                await updateBalances();
+            } catch (error) {
+                document.getElementById('tokenInfo').style.display = 'none';
+                document.getElementById('progressResult').innerText = '';
+                document.getElementById('progressBar').style.width = '0%';
+                document.getElementById('tokenDetails').innerText = `Failed to fetch token info: ${error.message}`;
+                document.getElementById('tokenBalance').innerText = 'Failed to fetch token info';
+                document.getElementById('buyAmount').disabled = true;
+                document.getElementById('sellAmount').disabled = true;
+                document.querySelectorAll('.percent-buttons button').forEach(btn => btn.disabled = true);
+                document.getElementById('buyButton').disabled = true;
+                document.getElementById('sellButton').disabled = true;
+            }
+        }
+
+        async function setPercent(percent, action) {
+            if (!web3 || !accounts) {
+                document.getElementById('transactionStatus').innerText = 'Please connect wallet';
+                return;
+            }
+            try {
+                let amount;
+                if (action === 'buy') {
+                    const gtBalance = await web3.eth.getBalance(accounts[0]);
+                    const balanceInGT = Number(web3.utils.fromWei(gtBalance, 'ether'));
+                    amount = (balanceInGT * percent / 100).toFixed(4);
+                    if (percent === 100) amount = (balanceInGT - 0.001).toFixed(4);
+                    document.getElementById('buyAmount').value = amount > 0 ? amount : 0;
+                } else {
+                    if (!currentTokenAddress || !tokenContract) {
+                        document.getElementById('transactionStatus').innerText = 'No token selected';
+                        return;
+                    }
+                    const tokenBalance = await tokenContract.methods.balanceOf(accounts[0]).call();
+                    const balanceInTokens = Number(web3.utils.fromWei(tokenBalance, 'ether'));
+                    amount = (balanceInTokens * percent / 100).toFixed(4);
+                    if (percent === 100) amount = (balanceInTokens - 0.001).toFixed(4);
+                    document.getElementById('sellAmount').value = amount > 0 ? amount : 0;
+                }
+                await updateCalculations();
+            } catch (error) {
+                document.getElementById('transactionStatus').innerText = `Failed to set amount: ${error.message}`;
+            }
+        }
+
+        async function buyTokens() {
+            if (!web3 || !accounts || !currentTokenAddress) {
+                document.getElementById('transactionStatus').innerText = 'Please connect wallet and select a token';
+                return;
+            }
+            const amount = document.getElementById('buyAmount').value;
+            if (!amount || amount <= 0) {
+                document.getElementById('transactionStatus').innerText = 'Please enter a valid amount';
+                return;
+            }
+            try {
+                const tokenState = await tokenFactoryContract.methods.tokens(currentTokenAddress).call();
+                if (tokenState != 1) {
+                    document.getElementById('transactionStatus').innerText = 'Token is not in funding state';
+                    return;
+                }
+                document.getElementById('transactionStatus').innerText = 'Buying tokens...';
+                const gas = await tokenFactoryContract.methods.buyTokens(currentTokenAddress).estimateGas({ from: accounts[0], value: web3.utils.toWei(amount, 'ether') });
+                await tokenFactoryContract.methods.buyTokens(currentTokenAddress).send({ from: accounts[0], value: web3.utils.toWei(amount, 'ether'), gas: Math.floor(gas * 1.2) });
+                document.getElementById('transactionStatus').innerText = 'Buy successful!';
+                await fetchTokenInfo();
+            } catch (error) {
+                document.getElementById('transactionStatus').innerText = `Buy failed: ${error.message}`;
+            }
+        }
+
+        async function sellTokens() {
+            if (!web3 || !accounts || !currentTokenAddress) {
+                document.getElementById('transactionStatus').innerText = 'Please connect wallet and select a token';
+                return;
+            }
+            const amount = document.getElementById('sellAmount').value;
+            if (!amount || amount <= 0) {
+                document.getElementById('transactionStatus').innerText = 'Please enter a valid amount';
+                return;
+            }
+            try {
+                const tokenState = await tokenFactoryContract.methods.tokens(currentTokenAddress).call();
+                if (tokenState != 1) {
+                    document.getElementById('transactionStatus').innerText = 'Token is not in funding state';
+                    return;
+                }
+                document.getElementById('transactionStatus').innerText = 'Selling tokens...';
+                const amountWei = web3.utils.toWei(amount, 'ether');
+                await tokenContract.methods.approve(tokenFactoryAddress, amountWei).send({ from: accounts[0] });
+                const gas = await tokenFactoryContract.methods.sellTokens(currentTokenAddress, amountWei).estimateGas({ from: accounts[0] });
+                await tokenFactoryContract.methods.sellTokens(currentTokenAddress, amountWei).send({ from: accounts[0], gas: Math.floor(gas * 1.2) });
+                document.getElementById('transactionStatus').innerText = 'Sell successful!';
+                await fetchTokenInfo();
+            } catch (error) {
+                document.getElementById('transactionStatus').innerText = `Sell failed: ${error.message}`;
+            }
+        }
+
+        async function createDomainToken() {
+            if (!web3 || !accounts) {
+                document.getElementById('createDomainStatus').innerText = 'Please connect wallet';
+                return;
+            }
+            const symbol = document.getElementById('tokenSymbol').value.trim();
+            if (!symbol) {
+                document.getElementById('createDomainStatus').innerText = 'Please enter a valid domain name';
+                return;
+            }
+            try {
+                document.getElementById('createDomainStatus').innerText = 'Creating domain token...';
+                const gasMint = await dGTContract.methods.mint(symbol).estimateGas({ from: accounts[0] });
+                const mintTx = await dGTContract.methods.mint(symbol).send({ from: accounts[0], gas: Math.floor(gasMint * 1.2) });
+                const tokenAddress = mintTx.events.Minted.returnValues.tokenAddress;
+                document.getElementById('createDomainStatus').innerText = `Domain token created: ${tokenAddress}`;
+                document.getElementById('tokenContract').value = tokenAddress;
+                currentTokenAddress = tokenAddress;
+                await fetchTokenInfo();
+                await updateBalances();
+            } catch (error) {
+                document.getElementById('createDomainStatus').innerText = `Create failed: ${error.message.includes('revert') ? error.message.split('revert')[1]?.trim() || 'Unknown reason' : error.message}`;
+            }
+        }
+
+        function parseUrlAndLoad() {
+            const urlParams = new URLSearchParams(window.location.search);
+            let domain = '';
+            if (urlParams.has('domain')) {
+                domain = decodeURIComponent(urlParams.get('domain'));
+            }
+            if (domain) {
+                document.getElementById('domainInput').value = domain;
+                searchDomain();
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const domainInput = document.getElementById('domainInput');
+            const searchButton = document.getElementById('searchButton');
+            const connectWalletButton = document.getElementById('connectWallet');
+            const buyAmountInput = document.getElementById('buyAmount');
+            const sellAmountInput = document.getElementById('sellAmount');
+
+            searchButton.addEventListener('click', searchDomain);
+            domainInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') searchDomain();
+            });
+            connectWalletButton.addEventListener('click', connectWallet);
+            buyAmountInput.addEventListener('input', updateCalculations);
+            sellAmountInput.addEventListener('input', updateCalculations);
+        });
+    </script>
+</body>
+</html>
