@@ -158,6 +158,10 @@
         const tokenABI = [{"inputs":[{"internalType":"string","name":"name","type":"string"},{"internalType":"string","name":"symbol","type":"string"},{"internalType":"uint256","name":"amount","type":"uint256"}],"name":"initialize","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"owner","type":"address"}],"name":"balanceOf","outputs":[{"internalType":"uint256","name":"balance","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"totalSupply","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"name","outputs":[{"internalType":"string","name":"","type":"string"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"symbol","outputs":[{"internalType":"string","name":"","type":"string"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"to","type":"address"},{"internalType":"uint256","name":"amount","type":"uint256"}],"name":"transfer","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"spender","type":"address"},{"internalType":"uint256","name":"amount","type":"uint256"}],"name":"approve","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"from","type":"address"},{"internalType":"address","name":"to","type":"address"},{"internalType":"uint256","name":"amount","type":"uint256"}],"name":"transferFrom","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"nonpayable","type":"function"}];
         const gateLayerChain = {chainId: 10088, rpcUrl: 'https://gatelayer-mainnet.gatenode.cc'};
 
+        // 硬编码 a 和 b 作为测试值
+        const TEST_A = Big('72750477415');
+        const TEST_B = Big('4800000000');
+
         function mulWad(x, y) { return x.times(y).div(WAD); }
         function expWad(x) {
             if (x.lte(-41446531673892822313)) return Big(0);
@@ -230,7 +234,9 @@
             const exp_b_x0 = expWad(mulWad(b, x0));
             const exp_b_x1 = expWad(mulWad(b, x0.plus(deltaX)));
             const delta = exp_b_x1.minus(exp_b_x0);
-            return a.times(delta.toFixed(0)).div(b);
+            const result = a.times(delta.toFixed(0)).div(b);
+            console.log('getFundsNeeded result:', result.toString());
+            return result;
         }
 
         async function getAmountOut(a, b, x0, deltaY) {
@@ -238,6 +244,7 @@
             const exp_b_x0 = expWad(mulWad(b, x0));
             const exp_b_x1 = exp_b_x0.plus(fullMulDiv(deltaY, b, a));
             const deltaX = Big(lnWad(exp_b_x1)).div(b.div(WAD)).minus(x0);
+            console.log('getAmountOut result:', deltaX.toString());
             return deltaX;
         }
 
@@ -314,7 +321,7 @@
                     const tokenBalance = await tokenContract.methods.balanceOf(accounts[0]).call();
                     const symbol = await tokenContract.methods.symbol().call();
                     document.getElementById('tokenBalance').innerText = `Balance: ${parseFloat(web3.utils.fromWei(tokenBalance, 'ether')).toFixed(4)} ${symbol}`;
-                    document.getElementById('tokenSymbol').innerText = symbol; // 动态显示代币符号
+                    document.getElementById('tokenSymbol').innerText = symbol;
                 } else {
                     document.getElementById('tokenBalance').innerText = 'Please search a domain';
                 }
@@ -335,10 +342,10 @@
                 return;
             }
             console.log('Starting calculations with token:', currentTokenAddress);
-            const a = await tokenFactoryContract.methods.a().call();
-            const b = await tokenFactoryContract.methods.b().call();
+            const a = TEST_A; // 使用硬编码值
+            const b = TEST_B; // 使用硬编码值
             const symbol = await tokenContract.methods.symbol().call();
-            console.log('Fetched parameters:', { a, b, symbol });
+            console.log('Using parameters:', { a: a.toString(), b: b.toString(), symbol });
             try {
                 if (buyAmount && parseFloat(buyAmount) > 0) {
                     console.log('Buy amount:', buyAmount);
@@ -347,7 +354,7 @@
                     const x0 = Big(totalSupply).minus(contractBalance);
                     console.log('Supply data:', { totalSupply, contractBalance, x0: x0.toString() });
                     const deltaY = Big(web3.utils.toWei(buyAmount.toString(), 'ether'));
-                    const deltaX = await getAmountOut(Big(a), Big(b), x0, deltaY);
+                    const deltaX = await getAmountOut(a, b, x0, deltaY);
                     const fundingSupply = Big('800000000000000000000000000'); // 800M * 10^18
                     const availableSupply = fundingSupply.minus(x0);
                     console.log('Calculation result:', { deltaX: deltaX.toString(), availableSupply: availableSupply.toString() });
@@ -367,7 +374,7 @@
                     const contractBalance = await tokenContract.methods.balanceOf(tokenFactoryAddress).call();
                     const x0 = Big(totalSupply).minus(contractBalance);
                     const deltaX = Big(web3.utils.toWei(sellAmount.toString(), 'ether'));
-                    const deltaY = await getFundsNeeded(Big(a), Big(b), x0, deltaX);
+                    const deltaY = await getFundsNeeded(a, b, x0, deltaX);
                     console.log('Sell calculation result:', { deltaY: deltaY.toString() });
                     if (deltaY.gte(0)) {
                         document.getElementById('sellCalcResult').innerText = `Will receive: ${parseFloat(web3.utils.fromWei(deltaY.toFixed(0), 'ether')).toFixed(4)} GT`;
@@ -410,7 +417,7 @@
                 document.getElementById('tokenContract').value = tokenAddress;
                 await fetchTokenInfo();
                 status.innerText = '';
-                await updateCalculations(); // 搜索后立即触发计算
+                await updateCalculations();
             } catch (error) {
                 status.innerText = `Domain not found or token not launched: ${error.message.includes('revert') ? error.message.split('revert')[1]?.trim() || 'Domain not registered' : error.message}`;
                 document.getElementById('tokenInfo').style.display = 'none';
@@ -446,7 +453,7 @@
                 document.getElementById('progressResult').innerText = `Funding Progress: ${progress.toFixed(2)}% (State: ${['Not Created', 'Funding', 'Trading'][tokenState]})`;
                 document.getElementById('progressBar').style.width = `${Math.min(progress, 100)}%`;
                 document.getElementById('tokenInfo').style.display = 'block';
-                document.getElementById('tokenSymbol').innerText = symbol; // 动态更新卖出标签的代币符号
+                document.getElementById('tokenSymbol').innerText = symbol;
                 const isFunding = tokenState == 1 && accounts;
                 document.getElementById('buyAmount').disabled = !isFunding;
                 document.getElementById('sellAmount').disabled = !isFunding;
