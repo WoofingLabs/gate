@@ -165,7 +165,7 @@
             <input type="text" id="gdogAmount" placeholder="输入 GDOG 数量">
             <div class="balance-row"><span>GDOG 余额</span><span id="gdogBalance">余额: 0</span></div>
             <label>GT 数量</label>
-            <input type="text" id="gtAmount" placeholder="自动计算或手动输入 GT 数量">
+            <input type="text" id="gtAmount" placeholder="输入 GT 数量">
             <div class="balance-row"><span>GT 余额</span><span id="gtBalance">余额: 0</span></div>
             <label>滑点容忍度（%）</label>
             <input type="text" id="slippage" placeholder="输入滑点容忍度（如 5）" value="5">
@@ -182,7 +182,6 @@
         const routerAddress = '0x12814690F59a9CE8bA87dC8cF0692442bAa9C097';
         const gdogAddress = '0xA037355662d34D9B57dE209E22544a4862F5A30c';
         const wgtAddress = '0x6803b8E93b13941F6B73b82E324B80251B3dE338';
-        const pairAddress = '0xd4DD8a7F350E2e4A0A06742fAed5577a9C1B2f31';
 
         const routerAbi = [
             {
@@ -201,27 +200,6 @@
                     { "internalType": "uint256", "name": "liquidity", "type": "uint256" }
                 ],
                 "stateMutability": "payable",
-                "type": "function"
-            }
-        ];
-
-        const pairAbi = [
-            {
-                "inputs": [],
-                "name": "getReserves",
-                "outputs": [
-                    { "internalType": "uint112", "name": "_reserve0", "type": "uint112" },
-                    { "internalType": "uint112", "name": "_reserve1", "type": "uint112" },
-                    { "internalType": "uint32", "name": "_blockTimestampLast", "type": "uint32" }
-                ],
-                "stateMutability": "view",
-                "type": "function"
-            },
-            {
-                "inputs": [],
-                "name": "token0",
-                "outputs": [{ "internalType": "address", "name": "", "type": "address" }],
-                "stateMutability": "view",
                 "type": "function"
             }
         ];
@@ -266,7 +244,7 @@
             }
         };
 
-        let web3, account, routerContract, gdogContract, pairContract;
+        let web3, account, routerContract, gdogContract;
 
         const dogMessages = {
             connectSuccess: ["Woof! 钱包已连接，准备添加流动性！", "Arf! 连接成功，开始吧！", "Bark! 钱包就位，行动起来！"],
@@ -282,8 +260,7 @@
             invalidToken: ["Woof! 代币地址有误，请检查！", "Arf! 代币问题，验证地址！", "Bark! 代币错误，请检查！"],
             insufficientBalance: ["Woof! GDOG 或 GT 余额不足！", "Arf! 余额不够，补充点吧！", "Bark! 需要更多 GDOG 或 GT！"],
             insufficientGas: ["Woof! GT 不足以支付 Gas 费用！", "Arf! Gas 费用不够，补充 GT！", "Bark! 需要更多 GT 用于 Gas！"],
-            insufficientAllowance: ["Woof! GDOG 未授权，请先授权！", "Arf! 需要授权 GDOG！", "Bark! 先授权 GDOG 再操作！"],
-            poolNotFound: ["Woof! 流动性池数据不可用，请手动输入 GT 数量！", "Arf! 无法获取池子数据，手动设置 GT！", "Bark! 池子数据错误，输入 GT 数量！"]
+            insufficientAllowance: ["Woof! GDOG 未授权，请先授权！", "Arf! 需要授权 GDOG！", "Bark! 先授权 GDOG 再操作！"]
         };
 
         function getRandomMessage(type) {
@@ -359,51 +336,10 @@
             try {
                 routerContract = new web3.eth.Contract(routerAbi, web3.utils.toChecksumAddress(routerAddress));
                 gdogContract = new web3.eth.Contract(erc20Abi, web3.utils.toChecksumAddress(gdogAddress));
-                pairContract = new web3.eth.Contract(pairAbi, web3.utils.toChecksumAddress(pairAddress));
             } catch (error) {
                 console.error("合约初始化错误:", error);
                 document.getElementById('networkStatus').innerText = '合约初始化失败';
                 document.getElementById('dogMessage').innerText = 'Woof! 合约设置失败！';
-            }
-        }
-
-        async function calculateGTAmount(gdogAmount) {
-            const gtAmountInput = document.getElementById('gtAmount');
-            if (!web3 || !pairContract || !gdogAmount || isNaN(gdogAmount) || gdogAmount <= 0) {
-                gtAmountInput.value = '';
-                return;
-            }
-            try {
-                const reserves = await pairContract.methods.getReserves().call();
-                const token0 = await pairContract.methods.token0().call();
-
-                const gdogAmountWei = web3.utils.toWei(gdogAmount.toString(), 'ether');
-                let gtAmountWei;
-
-                // 确定代币对顺序：GDOG/WGT 或 WGT/GDOG
-                const isGdogToken0 = token0.toLowerCase() === gdogAddress.toLowerCase();
-                const reserveGdog = isGdogToken0 ? reserves._reserve0 : reserves._reserve1;
-                const reserveWgt = isGdogToken0 ? reserves._reserve1 : reserves._reserve0;
-
-                if (reserveGdog === '0' || reserveWgt === '0') {
-                    document.getElementById('networkStatus').innerText = '流动性池为空，请手动输入 GT 数量';
-                    document.getElementById('dogMessage').innerText = getRandomMessage('poolNotFound');
-                    gtAmountInput.value = '';
-                    return;
-                }
-
-                // 计算 GT 数量：GDOG 数量 * (reserveWgt / reserveGdog)
-                gtAmountWei = web3.utils.toBN(gdogAmountWei)
-                    .mul(web3.utils.toBN(reserveWgt))
-                    .div(web3.utils.toBN(reserveGdog));
-                const gtAmount = Number(web3.utils.fromWei(gtAmountWei, 'ether')).toFixed(6);
-                gtAmountInput.value = gtAmount;
-                document.getElementById('networkStatus').innerText = `已根据池子比例计算 GT 数量: ${gtAmount}`;
-            } catch (error) {
-                console.error("计算 GT 数量错误:", error);
-                document.getElementById('networkStatus').innerText = '无法计算 GT 数量，请手动输入';
-                document.getElementById('dogMessage').innerText = getRandomMessage('poolNotFound');
-                gtAmountInput.value = '';
             }
         }
 
@@ -558,7 +494,7 @@
                 const gtBalance = await web3.eth.getBalance(account);
                 if (web3.utils.toBN(gdogBalance).lt(web3.utils.toBN(gdogAmountWei))) {
                     status.innerText = "GDOG 余额不足";
-                    dogMessage.innerText = getRandomMessage('insufficientBalance');
+                    dogPrepMessage.innerText = getRandomMessage('insufficientBalance');
                     return;
                 }
                 if (web3.utils.toBN(gtBalance).lt(web3.utils.toBN(gtAmountWei))) {
@@ -628,10 +564,7 @@
         document.getElementById('connectWalletButton').addEventListener('click', initializeWeb3);
         document.getElementById('authorizeButton').addEventListener('click', authorizeToken);
         document.getElementById('addLiquidityButton').addEventListener('click', addLiquidity);
-        document.getElementById('gdogAmount').addEventListener('input', () => {
-            checkAuthorizationStatus();
-            calculateGTAmount(document.getElementById('gdogAmount').value.trim());
-        });
+        document.getElementById('gdogAmount').addEventListener('input', checkAuthorizationStatus);
         document.getElementById('gtAmount').addEventListener('input', checkAuthorizationStatus);
         document.getElementById('slippage').addEventListener('input', checkAuthorizationStatus);
 
