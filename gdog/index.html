@@ -182,7 +182,7 @@
         const routerAddress = '0x12814690F59a9CE8bA87dC8cF0692442bAa9C097';
         const gdogAddress = '0xA037355662d34D9B57dE209E22544a4862F5A30c';
         const wgtAddress = '0x6803b8E93b13941F6B73b82E324B80251B3dE338';
-        const factoryAddress = '0xd4DD8a7F350E2e4A0A06742fAed5577a9C1B2f31'; // 从 Raw Trace 获取的 Factory 地址
+        const pairAddress = '0xd4DD8a7F350E2e4A0A06742fAed5577a9C1B2f31';
 
         const routerAbi = [
             {
@@ -201,19 +201,6 @@
                     { "internalType": "uint256", "name": "liquidity", "type": "uint256" }
                 ],
                 "stateMutability": "payable",
-                "type": "function"
-            }
-        ];
-
-        const factoryAbi = [
-            {
-                "inputs": [
-                    { "internalType": "address", "name": "tokenA", "type": "address" },
-                    { "internalType": "address", "name": "tokenB", "type": "address" }
-                ],
-                "name": "getPair",
-                "outputs": [{ "internalType": "address", "name": "pair", "type": "address" }],
-                "stateMutability": "view",
                 "type": "function"
             }
         ];
@@ -279,7 +266,7 @@
             }
         };
 
-        let web3, account, routerContract, gdogContract, factoryContract, pairContract;
+        let web3, account, routerContract, gdogContract, pairContract;
 
         const dogMessages = {
             connectSuccess: ["Woof! 钱包已连接，准备添加流动性！", "Arf! 连接成功，开始吧！", "Bark! 钱包就位，行动起来！"],
@@ -296,7 +283,7 @@
             insufficientBalance: ["Woof! GDOG 或 GT 余额不足！", "Arf! 余额不够，补充点吧！", "Bark! 需要更多 GDOG 或 GT！"],
             insufficientGas: ["Woof! GT 不足以支付 Gas 费用！", "Arf! Gas 费用不够，补充 GT！", "Bark! 需要更多 GT 用于 Gas！"],
             insufficientAllowance: ["Woof! GDOG 未授权，请先授权！", "Arf! 需要授权 GDOG！", "Bark! 先授权 GDOG 再操作！"],
-            poolNotFound: ["Woof! 流动性池不存在，请手动输入 GT 数量！", "Arf! 未找到池子，手动设置 GT！", "Bark! 池子未创建，输入 GT 数量！"]
+            poolNotFound: ["Woof! 流动性池数据不可用，请手动输入 GT 数量！", "Arf! 无法获取池子数据，手动设置 GT！", "Bark! 池子数据错误，输入 GT 数量！"]
         };
 
         function getRandomMessage(type) {
@@ -372,21 +359,11 @@
             try {
                 routerContract = new web3.eth.Contract(routerAbi, web3.utils.toChecksumAddress(routerAddress));
                 gdogContract = new web3.eth.Contract(erc20Abi, web3.utils.toChecksumAddress(gdogAddress));
-                factoryContract = new web3.eth.Contract(factoryAbi, web3.utils.toChecksumAddress(factoryAddress));
+                pairContract = new web3.eth.Contract(pairAbi, web3.utils.toChecksumAddress(pairAddress));
             } catch (error) {
                 console.error("合约初始化错误:", error);
                 document.getElementById('networkStatus').innerText = '合约初始化失败';
                 document.getElementById('dogMessage').innerText = 'Woof! 合约设置失败！';
-            }
-        }
-
-        async function getPairAddress() {
-            try {
-                const pair = await factoryContract.methods.getPair(gdogAddress, wgtAddress).call();
-                return pair === '0x0000000000000000000000000000000000000000' ? null : pair;
-            } catch (error) {
-                console.error("获取池地址错误:", error);
-                return null;
             }
         }
 
@@ -397,15 +374,6 @@
                 return;
             }
             try {
-                const pairAddress = await getPairAddress();
-                if (!pairAddress) {
-                    document.getElementById('networkStatus').innerText = '流动性池不存在，请手动输入 GT 数量';
-                    document.getElementById('dogMessage').innerText = getRandomMessage('poolNotFound');
-                    gtAmountInput.value = '';
-                    return;
-                }
-
-                pairContract = new web3.eth.Contract(pairAbi, web3.utils.toChecksumAddress(pairAddress));
                 const reserves = await pairContract.methods.getReserves().call();
                 const token0 = await pairContract.methods.token0().call();
 
@@ -417,7 +385,7 @@
                 const reserveGdog = isGdogToken0 ? reserves._reserve0 : reserves._reserve1;
                 const reserveWgt = isGdogToken0 ? reserves._reserve1 : reserves._reserve0;
 
-                if (reserveGdog === '0' || FeedsWgt === '0') {
+                if (reserveGdog === '0' || reserveWgt === '0') {
                     document.getElementById('networkStatus').innerText = '流动性池为空，请手动输入 GT 数量';
                     document.getElementById('dogMessage').innerText = getRandomMessage('poolNotFound');
                     gtAmountInput.value = '';
@@ -622,7 +590,7 @@
                     return;
                 }
 
-                const txCAL = await routerContract.methods.addLiquidityETH(
+                const tx = await routerContract.methods.addLiquidityETH(
                     gdogAddress,
                     gdogAmountWei,
                     gdogAmountMin,
