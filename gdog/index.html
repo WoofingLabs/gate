@@ -369,7 +369,7 @@
 
         async function calculateGTAmount(gdogAmount) {
             const gtAmountInput = document.getElementById('gtAmount');
-            if (!gdogAmount || isNaN(gdogAmount) || gdogAmount <= 0) {
+            if (!web3 || !pairContract || !gdogAmount || isNaN(gdogAmount) || gdogAmount <= 0) {
                 gtAmountInput.value = '';
                 return;
             }
@@ -377,7 +377,7 @@
                 const reserves = await pairContract.methods.getReserves().call();
                 const token0 = await pairContract.methods.token0().call();
 
-                const gdogAmountWei = web3.utils.toWei(gdogAmount, 'ether');
+                const gdogAmountWei = web3.utils.toWei(gdogAmount.toString(), 'ether');
                 let gtAmountWei;
 
                 // 确定代币对顺序：GDOG/WGT 或 WGT/GDOG
