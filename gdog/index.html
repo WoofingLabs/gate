@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>添加 GT-GDOG 流动性</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+    <link rel="shortcut icon" href="https://woofswap.finance/image/tokens/star.png" type="image/x-icon" />
+    <style>
+        :root {
+            --primary-color: #ff9100;
+            --secondary-color: #ff6f61;
+            --gradient-bg: linear-gradient(180deg, #1e1e2f 0%, #2a2a3d 100%);
+            --card-bg: #2c2f48;
+            --input-bg: #373b5c;
+            --text-color: #ffffff;
+            --border-radius: 15px;
+        }
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: var(--gradient-bg);
+            color: var(--text-color);
+            padding: 20px;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .container {
+            width: 100%;
+            max-width: 480px;
+            background: var(--card-bg);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            border-radius: var(--border-radius);
+            padding: 20px;
+        }
+        .header {
+            background: linear-gradient(90deg, var(--secondary-color) 0%, var(--primary-color) 100%);
+            padding: 12px;
+            border-radius: var(--border-radius);
+            text-align: center;
+            font-size: 1.3em;
+            font-weight: 600;
+            margin-bottom: 20px;
+        }
+        .connect-section button {
+            padding: 12px;
+            background: var(--primary-color);
+            color: var(--text-color);
+            border: none;
+            border-radius: var(--border-radius);
+            cursor: pointer;
+            font-weight: bold;
+            width: 100%;
+            transition: background 0.2s;
+            margin-bottom: 10px;
+        }
+        .connect-section button:hover { background: #e68a00; }
+        .input-box {
+            background: var(--input-bg);
+            padding: 15px;
+            border-radius: var(--border-radius);
+            margin-bottom: 15px;
+        }
+        .input-box label {
+            display: block;
+            font-size: 0.9em;
+            margin-bottom: 5px;
+        }
+        input {
+            width: 100%;
+            padding: 10px;
+            background: var(--input-bg);
+            border: none;
+            border-radius: 10px;
+            color: var(--text-color);
+            font-size: 1em;
+        }
+        .balance-row {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.9em;
+            margin-bottom: 10px;
+            color: #ff9100;
+        }
+        .action-button {
+            padding: 15px;
+            background: var(--primary-color);
+            color: var(--text-color);
+            border: none;
+            border-radius: var(--border-radius);
+            cursor: pointer;
+            font-weight: bold;
+            width: 100%;
+            transition: background 0.2s;
+            margin-bottom: 10px;
+            position: relative;
+        }
+        .action-button:disabled {
+            background: #4a4f7a;
+            cursor: not-allowed;
+        }
+        .action-button:hover:not(:disabled) { background: #e68a00; }
+        .status {
+            margin-top: 10px;
+            font-size: 0.9em;
+            color: var(--primary-color);
+            text-align: center;
+        }
+        .dog-section {
+            text-align: center;
+            margin-top: 20px;
+        }
+        .dog-section img {
+            width: 60px;
+            height: 60px;
+            margin-bottom: 10px;
+        }
+        .dog-message {
+            font-size: 0.9em;
+            color: var(--secondary-color);
+            font-style: italic;
+        }
+        .spinner {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid #fff;
+            border-top: 2px solid var(--primary-color);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-left: 5px;
+            position: absolute;
+            right: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        @media (max-width: 480px) {
+            body { padding: 10px; }
+            .container { padding: 15px; }
+            .header { font-size: 1.1em; }
+            .dog-section img { width: 50px; height: 50px; }
+            .dog-message { font-size: 0.8em; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">添加 GT-GDOG 流动性</div>
+        <div class="connect-section">
+            <button id="connectWalletButton">连接钱包</button>
+            <div id="networkStatus" class="status">点击连接钱包...</div>
+        </div>
+        <div class="input-box">
+            <label>GDOG 数量</label>
+            <input type="text" id="gdogAmount" placeholder="输入 GDOG 数量">
+            <div class="balance-row"><span>GDOG 余额</span><span id="gdogBalance">余额: 0</span></div>
+            <label>GT 数量</label>
+            <input type="text" id="gtAmount" placeholder="输入 GT 数量">
+            <div class="balance-row"><span>GT 余额</span><span id="gtBalance">余额: 0</span></div>
+            <label>滑点容忍度（%）</label>
+            <input type="text" id="slippage" placeholder="输入滑点容忍度（如 5）" value="5">
+            <button class="action-button" id="authorizeButton" disabled>授权 GDOG</button>
+            <button class="action-button" id="addLiquidityButton" disabled>添加流动性</button>
+        </div>
+        <div class="dog-section">
+            <img src="https://woofswap.finance/image/tokens/star.png" alt="WSTAR">
+            <div class="dog-message" id="dogMessage">"Woof! 连接钱包以添加流动性！"</div>
+        </div>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/web3@1.7.0/dist/web3.min.js"></script>
+    <script>
+        const routerAddress = '0x12814690F59a9CE8bA87dC8cF0692442bAa9C097';
+        const gdogAddress = '0xA037355662d34D9B57dE209E22544a4862F5A30c';
+        const wgtAddress = '0x6803b8E93b13941F6B73b82E324B80251B3dE338';
+
+        const routerAbi = [
+            {
+                "inputs": [
+                    { "internalType": "address", "name": "token", "type": "address" },
+                    { "internalType": "uint256", "name": "amountTokenDesired", "type": "uint256" },
+                    { "internalType": "uint256", "name": "amountTokenMin", "type": "uint256" },
+                    { "internalType": "uint256", "name": "amountETHMin", "type": "uint256" },
+                    { "internalType": "address", "name": "to", "type": "address" },
+                    { "internalType": "uint256", "name": "deadline", "type": "uint256" }
+                ],
+                "name": "addLiquidityETH",
+                "outputs": [
+                    { "internalType": "uint256", "name": "amountToken", "type": "uint256" },
+                    { "internalType": "uint256", "name": "amountETH", "type": "uint256" },
+                    { "internalType": "uint256", "name": "liquidity", "type": "uint256" }
+                ],
+                "stateMutability": "payable",
+                "type": "function"
+            }
+        ];
+
+        const erc20Abi = [
+            {
+                "constant": true,
+                "inputs": [{ "name": "_owner", "type": "address" }],
+                "name": "balanceOf",
+                "outputs": [{ "name": "balance", "type": "uint256" }],
+                "type": "function"
+            },
+            {
+                "constant": false,
+                "inputs": [
+                    { "name": "_spender", "type": "address" },
+                    { "name": "_value", "type": "uint256" }
+                ],
+                "name": "approve",
+                "outputs": [{ "name": "success", "type": "bool" }],
+                "type": "function"
+            },
+            {
+                "constant": true,
+                "inputs": [
+                    { "name": "_owner", "type": "address" },
+                    { "name": "_spender", "type": "address" }
+                ],
+                "name": "allowance",
+                "outputs": [{ "name": "remaining", "type": "uint256" }],
+                "type": "function"
+            }
+        ];
+
+        const chains = {
+            RufusChain: {
+                chainId: 10088,
+                chainName: 'Gate Layer',
+                rpcUrl: 'https://gatelayer-mainnet.gatenode.cc',
+                blockExplorer: 'https://www.gatescan.org/gatelayer/',
+                nativeCurrency: { name: 'GT', symbol: 'GT', decimals: 18 }
+            }
+        };
+
+        let web3, account, routerContract, gdogContract;
+
+        const dogMessages = {
+            connectSuccess: ["Woof! 钱包已连接，准备添加流动性！", "Arf! 连接成功，开始吧！", "Bark! 钱包就位，行动起来！"],
+            connectFail: ["Woof! 钱包连接失败，请重试！", "Arf! 无法连接钱包，再试一次！", "Bark! 连接出错，检查钱包！"],
+            authorizeStart: ["Woof! 正在授权 GDOG，稍等！", "Arf! 授权进行中！", "Bark! 授权 GDOG 中！"],
+            authorizeSuccess: ["Woof! GDOG 授权成功，准备添加流动性！", "Arf! 授权完成！", "Bark! 授权成功！"],
+            authorizeFail: ["Woof! 授权失败，请重试！", "Arf! 授权出错，检查钱包！", "Bark! 授权问题，请重试！"],
+            addLiquidityStart: ["Woof! 正在添加流动性，稍等！", "Arf! 添加流动性进行中！", "Bark! 正在为池子注入流动性！"],
+            addLiquiditySuccess: ["Woof! 流动性添加成功！", "Arf! 池子已创建！", "Bark! 成功添加流动性！"],
+            addLiquidityFail: ["Woof! 添加流动性失败，检查输入！", "Arf! 出了点问题，请重试！", "Bark! 流动性添加失败！"],
+            invalidInput: ["Woof! 输入的地址或数量无效！", "Arf! 输入有误，检查一下！", "Bark! 请检查数量和滑点！"],
+            userDenied: ["Woof! 你取消了交易！", "Arf! 交易被取消，重新试试？", "Bark! 你拒绝了交易！"],
+            invalidToken: ["Woof! 代币地址有误，请检查！", "Arf! 代币问题，验证地址！", "Bark! 代币错误，请检查！"],
+            insufficientBalance: ["Woof! GDOG 或 GT 余额不足！", "Arf! 余额不够，补充点吧！", "Bark! 需要更多 GDOG 或 GT！"],
+            insufficientGas: ["Woof! GT 不足以支付 Gas 费用！", "Arf! Gas 费用不够，补充 GT！", "Bark! 需要更多 GT 用于 Gas！"],
+            insufficientAllowance: ["Woof! GDOG 未授权，请先授权！", "Arf! 需要授权 GDOG！", "Bark! 先授权 GDOG 再操作！"]
+        };
+
+        function getRandomMessage(type) {
+            const messages = dogMessages[type];
+            return messages[Math.floor(Math.random() * messages.length)];
+        }
+
+        async function waitForTransaction(txHash) {
+            let receipt = null;
+            const maxAttempts = 30;
+            let attempts = 0;
+            while (attempts < maxAttempts) {
+                receipt = await web3.eth.getTransactionReceipt(txHash);
+                if (receipt) {
+                    if (receipt.status) return receipt;
+                    throw new Error(`交易 ${txHash} 失败`);
+                }
+                await new Promise(resolve => setTimeout(resolve, 2000));
+                attempts++;
+            }
+            throw new Error(`交易 ${txHash} 未在 ${maxAttempts} 次尝试后确认`);
+        }
+
+        async function initializeWeb3() {
+            if (window.ethereum) {
+                web3 = new Web3(window.ethereum);
+                try {
+                    await window.ethereum.request({ method: 'eth_requestAccounts' });
+                    account = (await web3.eth.getAccounts())[0];
+                    document.getElementById('connectWalletButton').innerText = `已连接: ${account.slice(0, 6)}...${account.slice(-4)}`;
+                    await switchNetwork('RufusChain');
+                    await initializeContracts();
+                    await checkBalances();
+                    document.getElementById('networkStatus').innerText = `已连接到 Gate Layer`;
+                    document.getElementById('dogMessage').innerText = getRandomMessage('connectSuccess');
+                } catch (error) {
+                    console.error("连接错误:", error);
+                    document.getElementById('networkStatus').innerText = '钱包连接失败';
+                    document.getElementById('dogMessage').innerText = getRandomMessage('connectFail');
+                }
+            } else {
+                document.getElementById('networkStatus').innerText = '请安装 MetaMask';
+                document.getElementById('dogMessage').innerText = 'Woof! 未找到 MetaMask！';
+            }
+        }
+
+        async function switchNetwork(chain) {
+            const chainConfig = chains[chain];
+            try {
+                await window.ethereum.request({
+                    method: 'wallet_switchEthereumChain',
+                    params: [{ chainId: `0x${chainConfig.chainId.toString(16)}` }]
+                });
+            } catch (switchError) {
+                if (switchError.code === 4902) {
+                    await window.ethereum.request({
+                        method: 'wallet_addEthereumChain',
+                        params: [{
+                            chainId: `0x${chainConfig.chainId.toString(16)}`,
+                            chainName: chainConfig.chainName,
+                            rpcUrls: [chainConfig.rpcUrl],
+                            nativeCurrency: chainConfig.nativeCurrency,
+                            blockExplorerUrls: [chainConfig.blockExplorer]
+                        }]
+                    });
+                } else {
+                    throw switchError;
+                }
+            }
+        }
+
+        async function initializeContracts() {
+            try {
+                routerContract = new web3.eth.Contract(routerAbi, web3.utils.toChecksumAddress(routerAddress));
+                gdogContract = new web3.eth.Contract(erc20Abi, web3.utils.toChecksumAddress(gdogAddress));
+            } catch (error) {
+                console.error("合约初始化错误:", error);
+                document.getElementById('networkStatus').innerText = '合约初始化失败';
+                document.getElementById('dogMessage').innerText = 'Woof! 合约设置失败！';
+            }
+        }
+
+        async function checkBalances() {
+            if (!web3 || !account) {
+                document.getElementById('authorizeButton').disabled = true;
+                document.getElementById('addLiquidityButton').disabled = true;
+                document.getElementById('gdogBalance').innerText = '余额: 0';
+                document.getElementById('gtBalance').innerText = '余额: 0';
+                return;
+            }
+            try {
+                const gdogBalance = await gdogContract.methods.balanceOf(account).call();
+                document.getElementById('gdogBalance').innerText = `余额: ${Number(web3.utils.fromWei(gdogBalance, 'ether')).toLocaleString()}`;
+                const gtBalance = await web3.eth.getBalance(account);
+                document.getElementById('gtBalance').innerText = `余额: ${Number(web3.utils.fromWei(gtBalance, 'ether')).toLocaleString()} GT`;
+                await checkAuthorizationStatus();
+            } catch (error) {
+                console.error("余额查询错误:", error);
+                document.getElementById('gdogBalance').innerText = '余额: 查询失败';
+                document.getElementById('gtBalance').innerText = '余额: 查询失败';
+                document.getElementById('authorizeButton').disabled = true;
+                document.getElementById('addLiquidityButton').disabled = true;
+            }
+        }
+
+        async function checkAuthorizationStatus() {
+            if (!web3 || !account) {
+                document.getElementById('authorizeButton').disabled = true;
+                document.getElementById('addLiquidityButton').disabled = true;
+                return;
+            }
+            const gdogAmount = document.getElementById('gdogAmount').value.trim();
+            if (!gdogAmount || isNaN(gdogAmount) || gdogAmount <= 0) {
+                document.getElementById('authorizeButton').disabled = true;
+                document.getElementById('addLiquidityButton').disabled = true;
+                return;
+            }
+            try {
+                const amountWei = web3.utils.toWei(gdogAmount, 'ether');
+                const allowance = await gdogContract.methods.allowance(account, routerAddress).call();
+                const sufficientAllowance = web3.utils.toBN(allowance).gte(web3.utils.toBN(amountWei));
+                document.getElementById('authorizeButton').disabled = sufficientAllowance;
+                document.getElementById('addLiquidityButton').disabled = !sufficientAllowance;
+                document.getElementById('networkStatus').innerText = sufficientAllowance ? "GDOG 已授权，准备添加流动性" : "请先授权 GDOG";
+            } catch (error) {
+                console.error("授权检查错误:", error);
+                document.getElementById('networkStatus').innerText = "检查授权状态失败";
+                document.getElementById('dogMessage').innerText = getRandomMessage('authorizeFail');
+            }
+        }
+
+        async function authorizeToken() {
+            const status = document.getElementById('networkStatus');
+            const authorizeButton = document.getElementById('authorizeButton');
+            const dogMessage = document.getElementById('dogMessage');
+            const gdogAmount = document.getElementById('gdogAmount').value.trim();
+
+            if (!web3 || !account || !gdogContract) {
+                status.innerText = "请连接钱包或检查代币地址";
+                dogMessage.innerText = getRandomMessage('connectFail');
+                return;
+            }
+            if (!gdogAmount || isNaN(gdogAmount) || gdogAmount <= 0) {
+                status.innerText = "请输入有效的 GDOG 数量";
+                dogMessage.innerText = getRandomMessage('invalidInput');
+                return;
+            }
+
+            try {
+                authorizeButton.disabled = true;
+                authorizeButton.innerHTML = '授权中... <span class="spinner"></span>';
+                status.innerText = "正在授权 GDOG...";
+                dogMessage.innerText = getRandomMessage('authorizeStart');
+
+                const amountWei = web3.utils.toWei(gdogAmount, 'ether');
+                const gasPrice = await web3.eth.getGasPrice();
+                const estimatedGas = await gdogContract.methods.approve(
+                    routerAddress,
+                    amountWei
+                ).estimateGas({ from: account });
+                const nativeBalance = await web3.eth.getBalance(account);
+                const gasCost = web3.utils.toBN(gasPrice).mul(web3.utils.toBN(estimatedGas));
+                if (web3.utils.toBN(nativeBalance).lt(gasCost)) {
+                    status.innerText = "GT 不足以支付 Gas 费用";
+                    dogMessage.innerText = getRandomMessage('insufficientGas');
+                    return;
+                }
+
+                const tx = await gdogContract.methods.approve(
+                    routerAddress,
+                    amountWei
+                ).send({
+                    from: account,
+                    gas: web3.utils.toHex(Math.min(estimatedGas * 2, 1000000))
+                });
+                await waitForTransaction(tx.transactionHash);
+
+                status.innerText = "GDOG 授权成功！";
+                dogMessage.innerText = getRandomMessage('authorizeSuccess');
+                await checkAuthorizationStatus();
+            } catch (error) {
+                console.error("授权错误:", error);
+                if (error.code === 4001) {
+                    status.innerText = "用户取消了授权";
+                    dogMessage.innerText = getRandomMessage('userDenied');
+                } else if (error.message.includes('insufficient funds for gas')) {
+                    status.innerText = "GT 不足以支付 Gas 费用";
+                    dogMessage.innerText = getRandomMessage('insufficientGas');
+                } else {
+                    status.innerText = "授权失败，请检查代币地址";
+                    dogMessage.innerText = getRandomMessage('authorizeFail');
+                }
+            } finally {
+                authorizeButton.disabled = false;
+                authorizeButton.innerHTML = '授权 GDOG';
+            }
+        }
+
+        async function addLiquidity() {
+            const status = document.getElementById('networkStatus');
+            const addLiquidityButton = document.getElementById('addLiquidityButton');
+            const dogMessage = document.getElementById('dogMessage');
+            const gdogAmount = document.getElementById('gdogAmount').value.trim();
+            const gtAmount = document.getElementById('gtAmount').value.trim();
+            const slippage = document.getElementById('slippage').value.trim();
+
+            if (!web3 || !account) {
+                status.innerText = "请连接钱包";
+                dogMessage.innerText = getRandomMessage('connectFail');
+                return;
+            }
+            if (!gdogAmount || isNaN(gdogAmount) || gdogAmount <= 0 || !gtAmount || isNaN(gtAmount) || gtAmount <= 0 || !slippage || isNaN(slippage) || slippage < 0) {
+                status.innerText = "请输入有效的 GDOG 数量、GT 数量或滑点";
+                dogMessage.innerText = getRandomMessage('invalidInput');
+                return;
+            }
+
+            try {
+                addLiquidityButton.disabled = true;
+                addLiquidityButton.innerHTML = '添加中... <span class="spinner"></span>';
+                status.innerText = "检查余额和 Gas...";
+                dogMessage.innerText = getRandomMessage('addLiquidityStart');
+
+                const gdogAmountWei = web3.utils.toWei(gdogAmount, 'ether');
+                const gtAmountWei = web3.utils.toWei(gtAmount, 'ether');
+                const slippagePercent = parseFloat(slippage) / 100;
+                const gdogAmountMin = web3.utils.toBN(gdogAmountWei).mul(web3.utils.toBN((1 - slippagePercent) * 1000)).div(web3.utils.toBN(1000));
+                const gtAmountMin = web3.utils.toBN(gtAmountWei).mul(web3.utils.toBN((1 - slippagePercent) * 1000)).div(web3.utils.toBN(1000));
+
+                const gdogBalance = await gdogContract.methods.balanceOf(account).call();
+                const gtBalance = await web3.eth.getBalance(account);
+                if (web3.utils.toBN(gdogBalance).lt(web3.utils.toBN(gdogAmountWei))) {
+                    status.innerText = "GDOG 余额不足";
+                    dogPrepMessage.innerText = getRandomMessage('insufficientBalance');
+                    return;
+                }
+                if (web3.utils.toBN(gtBalance).lt(web3.utils.toBN(gtAmountWei))) {
+                    status.innerText = "GT 余额不足";
+                    dogMessage.innerText = getRandomMessage('insufficientBalance');
+                    return;
+                }
+
+                const allowance = await gdogContract.methods.allowance(account, routerAddress).call();
+                if (web3.utils.toBN(allowance).lt(web3.utils.toBN(gdogAmountWei))) {
+                    status.innerText = "请先授权 GDOG";
+                    dogMessage.innerText = getRandomMessage('insufficientAllowance');
+                    return;
+                }
+
+                const gasPrice = await web3.eth.getGasPrice();
+                const estimatedGas = await routerContract.methods.addLiquidityETH(
+                    gdogAddress,
+                    gdogAmountWei,
+                    gdogAmountMin,
+                    gtAmountMin,
+                    account,
+                    Math.floor(Date.now() / 1000) + 60 * 20
+                ).estimateGas({ from: account, value: gtAmountWei });
+                const gasCost = web3.utils.toBN(gasPrice).mul(web3.utils.toBN(estimatedGas));
+                if (web3.utils.toBN(gtBalance).lt(web3.utils.toBN(gtAmountWei).add(gasCost))) {
+                    status.innerText = "GT 不足以支付 Gas 费用";
+                    dogMessage.innerText = getRandomMessage('insufficientGas');
+                    return;
+                }
+
+                const tx = await routerContract.methods.addLiquidityETH(
+                    gdogAddress,
+                    gdogAmountWei,
+                    gdogAmountMin,
+                    gtAmountMin,
+                    account,
+                    Math.floor(Date.now() / 1000) + 60 * 20
+                ).send({
+                    from: account,
+                    value: gtAmountWei,
+                    gas: web3.utils.toHex(Math.min(estimatedGas * 2, 3000000))
+                });
+                await waitForTransaction(tx.transactionHash);
+
+                status.innerText = "流动性添加成功！";
+                dogMessage.innerText = getRandomMessage('addLiquiditySuccess');
+                await checkBalances();
+            } catch (error) {
+                console.error("添加流动性错误:", error);
+                if (error.code === 4001) {
+                    status.innerText = "用户取消了交易";
+                    dogMessage.innerText = getRandomMessage('userDenied');
+                } else if (error.message.includes('insufficient funds for gas')) {
+                    status.innerText = "GT 不足以支付 Gas 费用";
+                    dogMessage.innerText = getRandomMessage('insufficientGas');
+                } else {
+                    status.innerText = "添加流动性失败: " + (error.message || "未知错误");
+                    dogMessage.innerText = getRandomMessage('addLiquidityFail');
+                }
+            } finally {
+                addLiquidityButton.disabled = false;
+                addLiquidityButton.innerHTML = '添加流动性';
+            }
+        }
+
+        document.getElementById('connectWalletButton').addEventListener('click', initializeWeb3);
+        document.getElementById('authorizeButton').addEventListener('click', authorizeToken);
+        document.getElementById('addLiquidityButton').addEventListener('click', addLiquidity);
+        document.getElementById('gdogAmount').addEventListener('input', checkAuthorizationStatus);
+        document.getElementById('gtAmount').addEventListener('input', checkAuthorizationStatus);
+        document.getElementById('slippage').addEventListener('input', checkAuthorizationStatus);
+
+        document.addEventListener('DOMContentLoaded', () => {
+            checkBalances();
+            checkAuthorizationStatus();
+        });
+    </script>
+</body>
+</html>
