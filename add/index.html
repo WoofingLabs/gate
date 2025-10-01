@@ -122,7 +122,7 @@
             margin-bottom: 10px;
         }
         .dog-message {
-            display: none; /* 隐藏狗喊话 */
+            display: none;
         }
         .spinner {
             display: inline-block;
@@ -176,7 +176,7 @@
             <input type="text" id="gtAmount" placeholder="自动计算" readonly>
             <div class="balance-row"><span>GT 余额</span><span id="gtBalance">余额: 0</span></div>
             <label>滑点容忍度（%）</label>
-            <input type="text" id="slippage" placeholder="输入滑点容忍度（如 10）" value="10">
+            <input type="text" id="slippage" placeholder="输入滑点容忍度（如 20）" value="20">
             <button class="action-button" id="authorizeButton" disabled>授权 GDOG</button>
             <button class="action-button" id="addLiquidityButton" disabled>添加流动性</button>
         </div>
@@ -190,10 +190,11 @@
     </div>
     <script src="https://cdn.jsdelivr.net/npm/web3@1.7.0/dist/web3.min.js"></script>
     <script>
-        const routerAddress = '0x12814690F59a9CE8bA87dC8cF0692442bAa9C097';
-        const gdogAddress = '0xA037355662d34D9B57dE209E22544a4862F5A30c';
-        const wgtAddress = '0x6803b8E93b13941F6B73b82E324B80251B3dE338';
-        const pairAddress = '0xd4DD8a7F350E2e4A0A06742fAed5577a9C1B2f31';
+        const routerAddress = '0x12814690f59a9ce8ba87dc8cf0692442baa9c097';
+        const gdogAddress = '0xa037355662d34d9b57de209e22544a4862f5a30c';
+        const wgtAddress = '0x6803b8e93b13941f6b73b82e324b80251b3de338';
+        const pairAddress = '0xd4dd8a7f350e2e4a0a06742faed5577a9c1b2f31';
+        const multicallAddress = '0x146b2AE41b06CF83C1a2f0b0a3883DaB370c378e';
 
         const routerAbi = [
             {
@@ -267,6 +268,27 @@
             }
         ];
 
+        const multicallAbi = [
+            {
+                "inputs": [
+                    { "internalType": "bool", "name": "requireSuccess", "type": "bool" },
+                    { "components": [
+                        { "internalType": "address", "name": "target", "type": "address" },
+                        { "internalType": "bytes", "name": "callData", "type": "bytes" }
+                    ], "internalType": "struct Multicall2.Call[]", "name": "calls", "type": "tuple[]" }
+                ],
+                "name": "tryAggregate",
+                "outputs": [
+                    { "components": [
+                        { "internalType": "bool", "name": "success", "type": "bool" },
+                        { "internalType": "bytes", "name": "returnData", "type": "bytes" }
+                    ], "internalType": "struct Multicall2.Result[]", "name": "returnData", "type": "tuple[]" }
+                ],
+                "stateMutability": "payable",
+                "type": "function"
+            }
+        ];
+
         const chains = {
             RufusChain: {
                 chainId: 10088,
@@ -277,7 +299,7 @@
             }
         };
 
-        let web3, account, routerContract, gdogContract, pairContract;
+        let web3, account, routerContract, gdogContract, pairContract, multicallContract;
 
         async function waitForTransaction(txHash, maxAttempts = 30) {
             let attempts = 0;
@@ -348,6 +370,7 @@
             routerContract = new web3.eth.Contract(routerAbi, web3.utils.toChecksumAddress(routerAddress));
             gdogContract = new web3.eth.Contract(erc20Abi, web3.utils.toChecksumAddress(gdogAddress));
             pairContract = new web3.eth.Contract(pairAbi, web3.utils.toChecksumAddress(pairAddress));
+            multicallContract = new web3.eth.Contract(multicallAbi, web3.utils.toChecksumAddress(multicallAddress));
         }
 
         async function checkBalances() {
@@ -360,9 +383,20 @@
                 return;
             }
             try {
-                const gdogBalance = await gdogContract.methods.balanceOf(account).call({ timeout: 10000 });
+                const calls = [
+                    {
+                        target: gdogContract.options.address,
+                        callData: gdogContract.methods.balanceOf(account).encodeABI()
+                    },
+                    {
+                        target: web3.utils.toChecksumAddress(account),
+                        callData: web3.eth.abi.encodeFunctionSignature('balanceOf(address)') // 模拟 ETH 余额
+                    }
+                ];
+                const results = await multicallContract.methods.tryAggregate(true, calls).call();
+                const gdogBalance = web3.eth.abi.decodeParameter('uint256', results[0].returnData);
+                const gtBalance = web3.eth.abi.decodeParameter('uint256', results[1].returnData);
                 document.getElementById('gdogBalance').innerText = `余额: ${Number(web3.utils.fromWei(gdogBalance, 'ether')).toLocaleString()}`;
-                const gtBalance = await web3.eth.getBalance(account);
                 document.getElementById('gtBalance').innerText = `余额: ${Number(web3.utils.fromWei(gtBalance, 'ether')).toLocaleString()} GT`;
                 await checkAuthorizationStatus();
             } catch (error) {
@@ -390,7 +424,14 @@
             }
             try {
                 const amountWei = web3.utils.toWei(gdogAmount, 'ether');
-                const allowance = await gdogContract.methods.allowance(account, routerAddress).call({ timeout: 10000 });
+                const calls = [
+                    {
+                        target: gdogContract.options.address,
+                        callData: gdogContract.methods.allowance(account, routerAddress).encodeABI()
+                    }
+                ];
+                const results = await multicallContract.methods.tryAggregate(true, calls).call();
+                const allowance = web3.eth.abi.decodeParameter('uint256', results[0].returnData);
                 const sufficientAllowance = web3.utils.toBN(allowance).gte(web3.utils.toBN(amountWei));
                 document.getElementById('authorizeButton').disabled = sufficientAllowance;
                 document.getElementById('addLiquidityButton').disabled = !sufficientAllowance;
@@ -410,14 +451,25 @@
                 return;
             }
             try {
-                const reserves = await pairContract.methods.getReserves().call({ timeout: 10000 });
-                const token0 = await pairContract.methods.token0().call({ timeout: 10000 });
+                const calls = [
+                    {
+                        target: pairContract.options.address,
+                        callData: pairContract.methods.getReserves().encodeABI()
+                    },
+                    {
+                        target: pairContract.options.address,
+                        callData: pairContract.methods.token0().encodeABI()
+                    }
+                ];
+                const results = await multicallContract.methods.tryAggregate(true, calls).call();
+                const reserves = web3.eth.abi.decodeParameters(['uint112', 'uint112', 'uint32'], results[0].returnData);
+                const token0 = web3.eth.abi.decodeParameter('address', results[1].returnData);
                 const gdogAmountWei = web3.utils.toWei(gdogAmount.toString(), 'ether');
                 let gtAmountWei;
 
                 const isGdogToken0 = token0.toLowerCase() === gdogAddress.toLowerCase();
-                const reserveGdog = isGdogToken0 ? reserves._reserve0 : reserves._reserve1;
-                const reserveWgt = isGdogToken0 ? reserves._reserve1 : reserves._reserve0;
+                const reserveGdog = isGdogToken0 ? reserves[0] : reserves[1];
+                const reserveWgt = isGdogToken0 ? reserves[1] : reserves[0];
 
                 if (web3.utils.toBN(reserveGdog).isZero() || web3.utils.toBN(reserveWgt).isZero()) {
                     document.getElementById('networkStatus').innerText = '池子数据不可用，请手动输入 GT';
@@ -509,8 +561,8 @@
 
             addLiquidityButton.disabled = true;
             addLiquidityButton.innerHTML = '添加中... <span class="spinner"></span>';
-            status.innerText = "检查余额和 Gas...";
-            document.getElementById('progressStatus').innerText = '检查余额和 Gas 中...';
+            status.innerText = "执行添加流动性...";
+            document.getElementById('progressStatus').innerText = '添加流动性中...';
 
             const gdogAmountWei = web3.utils.toWei(gdogAmount, 'ether');
             const gtAmountWei = web3.utils.toWei(gtAmount, 'ether');
@@ -518,28 +570,21 @@
             const gdogAmountMin = web3.utils.toBN(gdogAmountWei).mul(web3.utils.toBN((1 - slippagePercent) * 1000)).div(web3.utils.toBN(1000));
             const gtAmountMin = web3.utils.toBN(gtAmountWei).mul(web3.utils.toBN((1 - slippagePercent) * 1000)).div(web3.utils.toBN(1000));
 
-            const gdogBalance = await gdogContract.methods.balanceOf(account).call({ timeout: 10000 });
-            const gtBalance = await web3.eth.getBalance(account);
-            if (web3.utils.toBN(gdogBalance).lt(web3.utils.toBN(gdogAmountWei))) {
-                status.innerText = "GDOG 余额不足";
-                document.getElementById('progressStatus').innerText = '错误: GDOG 余额不足';
-                return;
-            }
-            if (web3.utils.toBN(gtBalance).lt(web3.utils.toBN(gtAmountWei))) {
-                status.innerText = "GT 余额不足";
-                document.getElementById('progressStatus').innerText = '错误: GT 余额不足';
-                return;
-            }
-
-            const allowance = await gdogContract.methods.allowance(account, routerAddress).call({ timeout: 10000 });
-            if (web3.utils.toBN(allowance).lt(web3.utils.toBN(gdogAmountWei))) {
-                status.innerText = "请先授权 GDOG";
-                document.getElementById('progressStatus').innerText = '错误: GDOG 未授权';
-                return;
-            }
-
             try {
-                const tx = await routerContract.methods.addLiquidityETH(gdogAddress, gdogAmountWei, gdogAmountMin, gtAmountMin, account, Math.floor(Date.now() / 1000) + 60 * 20).send({
+                const calls = [
+                    {
+                        target: routerContract.options.address,
+                        callData: routerContract.methods.addLiquidityETH(
+                            gdogAddress,
+                            gdogAmountWei,
+                            gdogAmountMin,
+                            gtAmountMin,
+                            account,
+                            Math.floor(Date.now() / 1000) + 60 * 20
+                        ).encodeABI()
+                    }
+                ];
+                const tx = await multicallContract.methods.tryAggregate(true, calls).send({
                     from: account,
                     value: gtAmountWei,
                     gas: 10000000
@@ -557,6 +602,9 @@
                 } else if (error.message.includes('insufficient funds for gas')) {
                     status.innerText = "GT 不足以支付 Gas 费用";
                     document.getElementById('progressStatus').innerText = '错误: Gas 费用不足';
+                } else if (error.message.includes('TransferHelper: TRANSFER_FROM_FAILED')) {
+                    status.innerText = "GDOG 转账失败，请检查余额或授权";
+                    document.getElementById('progressStatus').innerText = '错误: GDOG 转账失败';
                 } else {
                     status.innerText = "添加流动性失败: " + (error.message || "未知错误");
                     document.getElementById('progressStatus').innerText = `错误: ${error.message}`;
