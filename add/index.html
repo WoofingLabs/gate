@@ -289,13 +289,29 @@
                         document.getElementById('progressStatus').innerText = `交易成功: ${txHash}, Gas 使用: ${receipt.gasUsed}`;
                         return receipt;
                     }
-                    throw new Error(`交易 ${txHash} 失败`);
+                    throw new Error(`交易 ${txHash} 失败, Revert Reason: ${await getRevertReason(txHash)}`);
                 }
                 await new Promise(resolve => setTimeout(resolve, 2000));
                 attempts++;
                 document.getElementById('progressStatus').innerText = `等待交易确认: 尝试 ${attempts + 1}/${maxAttempts}...`;
             }
             throw new Error(`交易 ${txHash} 未在 ${maxAttempts} 次尝试后确认`);
+        }
+
+        async function getRevertReason(txHash) {
+            const tx = await web3.eth.getTransaction(txHash);
+            const receipt = await web3.eth.getTransactionReceipt(txHash);
+            if (receipt && !receipt.status) {
+                const code = await web3.eth.getCode(tx.to);
+                const reason = await web3.eth.call({
+                    to: tx.to,
+                    from: tx.from,
+                    data: tx.input,
+                    gas: tx.gas
+                }, receipt.blockNumber - 1);
+                return web3.utils.hexToUtf8(reason).replace(/\0/g, '');
+            }
+            return 'Unknown';
         }
 
         async function initializeWeb3() {
@@ -421,7 +437,7 @@
 
                 if (web3.utils.toBN(reserveGdog).isZero() || web3.utils.toBN(reserveWgt).isZero()) {
                     document.getElementById('networkStatus').innerText = '池子未初始化，请确认';
-                    gtAmountInput.value = '0.01';
+                    gtAmountInput.value = '0.02'; // 默认与成功交易匹配
                     return;
                 }
 
@@ -430,11 +446,12 @@
                     .div(web3.utils.toBN(reserveGdog));
                 const gtAmount = Number(web3.utils.fromWei(gtAmountWei, 'ether')).toFixed(6);
                 gtAmountInput.value = gtAmount;
+                console.log(`Calculated GT: ${gtAmount}, Reserve GDOG: ${web3.utils.fromWei(reserveGdog, 'ether')}, Reserve WGT: ${web3.utils.fromWei(reserveWgt, 'ether')}`);
                 document.getElementById('networkStatus').innerText = `根据池子比例计算 GT: ${gtAmount}`;
             } catch (error) {
                 console.error("计算 GT 数量错误:", error);
                 document.getElementById('networkStatus').innerText = '无法计算 GT，请手动输入';
-                gtAmountInput.value = '0.01';
+                gtAmountInput.value = '0.02'; // 默认值
                 document.getElementById('progressStatus').innerText = `错误: 计算 GT 失败 - ${error.message}`;
             }
         }
@@ -515,8 +532,16 @@
             const gdogAmountWei = web3.utils.toWei(gdogAmount, 'ether');
             const gtAmountWei = web3.utils.toWei(gtAmount, 'ether');
             const slippagePercent = parseFloat(slippage) / 100;
-            const gdogAmountMin = web3.utils.toBN(gdogAmountWei).mul(web3.utils.toBN((1 - slippagePercent) * 1000)).div(web3.utils.toBN(1000));
-            const gtAmountMin = web3.utils.toBN(gtAmountWei).mul(web3.utils.toBN((1 - slippagePercent) * 1000)).div(web3.utils.toBN(1000));
+            const gdogAmountMin = web3.utils.toBN(gdogAmountWei).mul(web3.utils.toBN(Math.floor((1 - slippagePercent) * 1000))).div(web3.utils.toBN(1000));
+            const gtAmountMin = web3.utils.toBN(gtAmountWei).mul(web3.utils.toBN(Math.floor((1 - slippagePercent) * 1000))).div(web3.utils.toBN(1000));
+
+            console.log({
+                gdogAmountWei: web3.utils.fromWei(gdogAmountWei, 'ether'),
+                gtAmountWei: web3.utils.fromWei(gtAmountWei, 'ether'),
+                gdogAmountMin: web3.utils.fromWei(gdogAmountMin, 'ether'),
+                gtAmountMin: web3.utils.fromWei(gtAmountMin, 'ether'),
+                deadline: Math.floor(Date.now() / 1000) + 60 * 20
+            });
 
             try {
                 const tx = await routerContract.methods.addLiquidityETH(
@@ -554,7 +579,7 @@
                     status.innerText = "输入金额不足，请增加 GDOG 或 GT";
                     document.getElementById('progressStatus').innerText = '错误: 输入金额不足';
                 } else {
-                    status.innerText = "添加流动性失败: " + (error.message || "未知错误");
+                    status.innerText = `添加流动性失败: ${error.message || "未知错误"}`;
                     document.getElementById('progressStatus').innerText = `错误: ${error.message}`;
                 }
             } finally {
