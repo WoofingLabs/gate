@@ -140,6 +140,17 @@
             top: 50%;
             transform: translateY(-50%);
         }
+        .progress {
+            margin-top: 10px;
+            padding: 10px;
+            background: var(--input-bg);
+            border-radius: var(--border-radius);
+            color: var(--text-color);
+            font-size: 0.8em;
+        }
+        .progress-item {
+            margin: 5px 0;
+        }
         @keyframes spin {
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
@@ -175,6 +186,9 @@
         <div class="dog-section">
             <img src="https://woofswap.finance/image/tokens/star.png" alt="WSTAR">
             <div class="dog-message" id="dogMessage">"Woof! 连接钱包以添加流动性！"</div>
+        </div>
+        <div class="progress" id="progressLog">
+            <div class="progress-item" id="progressStatus">等待操作...</div>
         </div>
     </div>
     <script src="https://cdn.jsdelivr.net/npm/web3@1.7.0/dist/web3.min.js"></script>
@@ -295,14 +309,19 @@
             let receipt = null;
             const maxAttempts = 30;
             let attempts = 0;
+            document.getElementById('progressStatus').innerText = `等待交易确认: 尝试 ${attempts + 1}/${maxAttempts}...`;
             while (attempts < maxAttempts) {
                 receipt = await web3.eth.getTransactionReceipt(txHash);
                 if (receipt) {
-                    if (receipt.status) return receipt;
+                    if (receipt.status) {
+                        document.getElementById('progressStatus').innerText = `交易成功: ${txHash}`;
+                        return receipt;
+                    }
                     throw new Error(`交易 ${txHash} 失败`);
                 }
                 await new Promise(resolve => setTimeout(resolve, 2000));
                 attempts++;
+                document.getElementById('progressStatus').innerText = `等待交易确认: 尝试 ${attempts + 1}/${maxAttempts}...`;
             }
             throw new Error(`交易 ${txHash} 未在 ${maxAttempts} 次尝试后确认`);
         }
@@ -369,11 +388,20 @@
                 document.getElementById('gtBalance').innerText = '余额: 0';
                 return;
             }
-            const gdogBalance = await gdogContract.methods.balanceOf(account).call();
-            document.getElementById('gdogBalance').innerText = `余额: ${Number(web3.utils.fromWei(gdogBalance, 'ether')).toLocaleString()}`;
-            const gtBalance = await web3.eth.getBalance(account);
-            document.getElementById('gtBalance').innerText = `余额: ${Number(web3.utils.fromWei(gtBalance, 'ether')).toLocaleString()} GT`;
-            await checkAuthorizationStatus();
+            try {
+                const gdogBalance = await gdogContract.methods.balanceOf(account).call();
+                document.getElementById('gdogBalance').innerText = `余额: ${Number(web3.utils.fromWei(gdogBalance, 'ether')).toLocaleString()}`;
+                const gtBalance = await web3.eth.getBalance(account);
+                document.getElementById('gtBalance').innerText = `余额: ${Number(web3.utils.fromWei(gtBalance, 'ether')).toLocaleString()} GT`;
+                await checkAuthorizationStatus();
+            } catch (error) {
+                console.error("余额查询错误:", error);
+                document.getElementById('gdogBalance').innerText = '余额: 查询失败';
+                document.getElementById('gtBalance').innerText = '余额: 查询失败';
+                document.getElementById('authorizeButton').disabled = true;
+                document.getElementById('addLiquidityButton').disabled = true;
+                document.getElementById('progressStatus').innerText = `错误: 余额查询失败 - ${error.message}`;
+            }
         }
 
         async function checkAuthorizationStatus() {
@@ -389,13 +417,20 @@
                 document.getElementById('gtAmount').value = '';
                 return;
             }
-            const amountWei = web3.utils.toWei(gdogAmount, 'ether');
-            const allowance = await gdogContract.methods.allowance(account, routerAddress).call();
-            const sufficientAllowance = web3.utils.toBN(allowance).gte(web3.utils.toBN(amountWei));
-            document.getElementById('authorizeButton').disabled = sufficientAllowance;
-            document.getElementById('addLiquidityButton').disabled = !sufficientAllowance;
-            await calculateGTAmount(gdogAmount);
-            document.getElementById('networkStatus').innerText = sufficientAllowance ? "GDOG 已授权，准备添加流动性" : "请先授权 GDOG";
+            try {
+                const amountWei = web3.utils.toWei(gdogAmount, 'ether');
+                const allowance = await gdogContract.methods.allowance(account, routerAddress).call();
+                const sufficientAllowance = web3.utils.toBN(allowance).gte(web3.utils.toBN(amountWei));
+                document.getElementById('authorizeButton').disabled = sufficientAllowance;
+                document.getElementById('addLiquidityButton').disabled = !sufficientAllowance;
+                await calculateGTAmount(gdogAmount);
+                document.getElementById('networkStatus').innerText = sufficientAllowance ? "GDOG 已授权，准备添加流动性" : "请先授权 GDOG";
+            } catch (error) {
+                console.error("授权检查错误:", error);
+                document.getElementById('networkStatus').innerText = "检查授权状态失败";
+                document.getElementById('dogMessage').innerText = getRandomMessage('authorizeFail');
+                document.getElementById('progressStatus').innerText = `错误: 授权检查失败 - ${error.message}`;
+            }
         }
 
         async function calculateGTAmount(gdogAmount) {
@@ -414,10 +449,10 @@
                 const reserveGdog = isGdogToken0 ? reserves._reserve0 : reserves._reserve1;
                 const reserveWgt = isGdogToken0 ? reserves._reserve1 : reserves._reserve0;
 
-                if (reserveGdog === '0' || reserveWgt === '0') {
+                if (web3.utils.toBN(reserveGdog).isZero() || web3.utils.toBN(reserveWgt).isZero()) {
                     document.getElementById('networkStatus').innerText = '池子数据不可用，请手动输入 GT';
                     document.getElementById('dogMessage').innerText = getRandomMessage('poolNotFound');
-                    gtAmountInput.value = '0.01'; // 默认最小值
+                    gtAmountInput.value = '0.01';
                     return;
                 }
 
@@ -432,6 +467,7 @@
                 document.getElementById('networkStatus').innerText = '无法计算 GT，请手动输入';
                 document.getElementById('dogMessage').innerText = getRandomMessage('poolNotFound');
                 gtAmountInput.value = '0.01';
+                document.getElementById('progressStatus').innerText = `错误: 计算 GT 失败 - ${error.message}`;
             }
         }
 
@@ -456,6 +492,7 @@
             authorizeButton.innerHTML = '授权中... <span class="spinner"></span>';
             status.innerText = "正在授权 GDOG...";
             dogMessage.innerText = getRandomMessage('authorizeStart');
+            document.getElementById('progressStatus').innerText = '授权 GDOG 中...';
 
             const amountWei = web3.utils.toWei(gdogAmount, 'ether');
             const gasPrice = await web3.eth.getGasPrice();
@@ -465,6 +502,7 @@
             if (web3.utils.toBN(nativeBalance).lt(gasCost)) {
                 status.innerText = "GT 不足以支付 Gas 费用";
                 dogMessage.innerText = getRandomMessage('insufficientGas');
+                document.getElementById('progressStatus').innerText = '错误: GT 余额不足';
                 return;
             }
 
@@ -476,18 +514,22 @@
                 await waitForTransaction(tx.transactionHash);
                 status.innerText = "GDOG 授权成功！";
                 dogMessage.innerText = getRandomMessage('authorizeSuccess');
+                document.getElementById('progressStatus').innerText = `授权成功: 交易哈希 ${tx.transactionHash}`;
                 await checkAuthorizationStatus();
             } catch (error) {
                 console.error("授权错误:", error);
                 if (error.code === 4001) {
                     status.innerText = "用户取消了授权";
                     dogMessage.innerText = getRandomMessage('userDenied');
+                    document.getElementById('progressStatus').innerText = '错误: 用户取消授权';
                 } else if (error.message.includes('insufficient funds for gas')) {
                     status.innerText = "GT 不足以支付 Gas 费用";
                     dogMessage.innerText = getRandomMessage('insufficientGas');
+                    document.getElementById('progressStatus').innerText = '错误: Gas 费用不足';
                 } else {
                     status.innerText = "授权失败，请检查代币地址";
                     dogMessage.innerText = getRandomMessage('authorizeFail');
+                    document.getElementById('progressStatus').innerText = `错误: 授权失败 - ${error.message}`;
                 }
             } finally {
                 authorizeButton.disabled = false;
@@ -518,6 +560,7 @@
             addLiquidityButton.innerHTML = '添加中... <span class="spinner"></span>';
             status.innerText = "检查余额和 Gas...";
             dogMessage.innerText = getRandomMessage('addLiquidityStart');
+            document.getElementById('progressStatus').innerText = '检查余额和 Gas 中...';
 
             const gdogAmountWei = web3.utils.toWei(gdogAmount, 'ether');
             const gtAmountWei = web3.utils.toWei(gtAmount, 'ether');
@@ -530,11 +573,13 @@
             if (web3.utils.toBN(gdogBalance).lt(web3.utils.toBN(gdogAmountWei))) {
                 status.innerText = "GDOG 余额不足";
                 dogMessage.innerText = getRandomMessage('insufficientBalance');
+                document.getElementById('progressStatus').innerText = '错误: GDOG 余额不足';
                 return;
             }
             if (web3.utils.toBN(gtBalance).lt(web3.utils.toBN(gtAmountWei))) {
                 status.innerText = "GT 余额不足";
                 dogMessage.innerText = getRandomMessage('insufficientBalance');
+                document.getElementById('progressStatus').innerText = '错误: GT 余额不足';
                 return;
             }
 
@@ -542,6 +587,7 @@
             if (web3.utils.toBN(allowance).lt(web3.utils.toBN(gdogAmountWei))) {
                 status.innerText = "请先授权 GDOG";
                 dogMessage.innerText = getRandomMessage('insufficientAllowance');
+                document.getElementById('progressStatus').innerText = '错误: GDOG 未授权';
                 return;
             }
 
@@ -551,6 +597,7 @@
             if (web3.utils.toBN(gtBalance).lt(web3.utils.toBN(gtAmountWei).add(gasCost))) {
                 status.innerText = "GT 不足以支付 Gas 费用";
                 dogMessage.innerText = getRandomMessage('insufficientGas');
+                document.getElementById('progressStatus').innerText = '错误: GT 不足以支付 Gas';
                 return;
             }
 
@@ -560,21 +607,26 @@
                     value: gtAmountWei,
                     gas: web3.utils.toHex(Math.min(estimatedGas * 2, 4000000))
                 });
+                document.getElementById('progressStatus').innerText = `交易提交: ${tx.transactionHash}`;
                 await waitForTransaction(tx.transactionHash);
                 status.innerText = "流动性添加成功！";
                 dogMessage.innerText = getRandomMessage('addLiquiditySuccess');
+                document.getElementById('progressStatus').innerText = `成功: 交易哈希 ${tx.transactionHash}, Gas 使用: ${receipt.gasUsed}`;
                 await checkBalances();
             } catch (error) {
                 console.error("添加流动性错误:", error);
                 if (error.code === 4001) {
                     status.innerText = "用户取消了交易";
                     dogMessage.innerText = getRandomMessage('userDenied');
+                    document.getElementById('progressStatus').innerText = '错误: 用户取消交易';
                 } else if (error.message.includes('insufficient funds for gas')) {
                     status.innerText = "GT 不足以支付 Gas 费用";
                     dogMessage.innerText = getRandomMessage('insufficientGas');
+                    document.getElementById('progressStatus').innerText = '错误: Gas 费用不足';
                 } else {
                     status.innerText = "添加流动性失败: " + (error.message || "未知错误");
                     dogMessage.innerText = getRandomMessage('addLiquidityFail');
+                    document.getElementById('progressStatus').innerText = `错误: ${error.message}`;
                 }
             } finally {
                 addLiquidityButton.disabled = false;
