@@ -176,7 +176,7 @@
             <input type="text" id="gtAmount" placeholder="自动计算" readonly>
             <div class="balance-row"><span>GT 余额</span><span id="gtBalance">余额: 0</span></div>
             <label>滑点容忍度（%）</label>
-            <input type="text" id="slippage" placeholder="输入滑点容忍度（如 20）" value="20">
+            <input type="text" id="slippage" placeholder="输入滑点容忍度（如 50）" value="50">
             <button class="action-button" id="authorizeButton" disabled>授权 GDOG</button>
             <button class="action-button" id="addLiquidityButton" disabled>添加流动性</button>
         </div>
@@ -472,7 +472,7 @@
                 const reserveWgt = isGdogToken0 ? reserves[1] : reserves[0];
 
                 if (web3.utils.toBN(reserveGdog).isZero() || web3.utils.toBN(reserveWgt).isZero()) {
-                    document.getElementById('networkStatus').innerText = '池子数据不可用，请手动输入 GT';
+                    document.getElementById('networkStatus').innerText = '池子未初始化，请确认';
                     gtAmountInput.value = '0.01';
                     return;
                 }
@@ -605,6 +605,9 @@
                 } else if (error.message.includes('TransferHelper: TRANSFER_FROM_FAILED')) {
                     status.innerText = "GDOG 转账失败，请检查余额或授权";
                     document.getElementById('progressStatus').innerText = '错误: GDOG 转账失败';
+                } else if (error.message.includes('UniswapV2: INSUFFICIENT_LIQUIDITY_MINTED')) {
+                    status.innerText = "流动性添加失败，比例可能不匹配";
+                    document.getElementById('progressStatus').innerText = '错误: 流动性比例不匹配';
                 } else {
                     status.innerText = "添加流动性失败: " + (error.message || "未知错误");
                     document.getElementById('progressStatus').innerText = `错误: ${error.message}`;
